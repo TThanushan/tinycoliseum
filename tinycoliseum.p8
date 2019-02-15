@@ -934,7 +934,6 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   health=health,
   moving=false,
   inv_frame=false,
-  danger=false,
   speak_info={timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=rnd(8)+4, text_arr={'come here !',
    'i saw him first !', 'you better run !', 'prize is mine !', 'mine mine mine',
    'you are dead !', 'fus-ro-dah !!!', 'show me your moves!','omae wa mou shindeiru',
@@ -946,7 +945,6 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   target,
   gun={active=false, duration=5, timer=0, backoff=150, move_speed=100,
    sprite=55, attack_speed=6,  first_attack_speed= 6, attack_timer=0, range=50, damage=1},
-  rolling={state=false, x=60, y=60, timer=0, sprite=4},
 
   find_target=function(self)
    -- self.move_point.target = closest_obj(self, {'player'})
@@ -1060,8 +1058,6 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
    return self.move_point.target
   end,
   animation=function(self)
-   if self.danger then spr(23, self.x+shkx,self.y-8+shky) end
-
    if(time() < self.anim_timer) then 
     return
    else
