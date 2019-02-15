@@ -438,7 +438,7 @@ function make_player()
   sprite=1,
 
   find_target=function(self)
-   self.target = closest_obj(self, {'enemy'})
+   self.target = closest_obj(self, 'enemy')
    -- self.move_point.target = 
   end,
   update_pet=function(self)
@@ -705,7 +705,7 @@ function make_turret(x, y, tag, duration, range, attack_speed, sprite, sound, bu
   attack_update=function(self)
    if self.bullet_infos.attack_timer <= time()  then
    sfx(sound)
-   local target = closest_obj(self, {'enemy'})
+   local target = closest_obj(self, 'enemy')
    if target ==nil then return end
       if target:get_tag()== 'enemy' and target:is_active() 
       and distance(self, target) <= self.range then
@@ -1058,27 +1058,15 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
    return self.move_point.target
   end,
   animation=function(self)
-   if(time() < self.anim_timer) then 
-    return
-   else
-    -- self.inv_frame=false
-   end
-    
+   if(time() >= self.anim_timer) then 
     if(self.moving) then
-     -- smoke_part_custom(self:center('x'),self:center('y'), rnd(2)+2, rnd(15)+60, 0.05,{9, 4})
-
-     if(self.anim_index < #self.walk_spr) then
-      self.anim_index +=1
-      self.current_spr = self.walk_spr[self.anim_index]
-     else
-      self.current_spr = self.walk_spr[1]
-      self.anim_index = 1
-     end
+     self.anim_index = (self.anim_index + 1) % (#self.walk_spr)
+     self.current_spr = self.walk_spr[self.anim_index + 1]
     else
      self.current_spr=self.idle_spr
     end
-
     self.anim_timer = time()+0.25
+   end
   end,
   reset=function(self)
    self.health = self.max_health
@@ -1109,30 +1097,24 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
 
 end
 
-function closest_obj(target, tags)
- local dist=0
- local shortest_dist=1000
- local closest=nil
- for obj in all(game_objects) do
+function closest_obj(target, tag)
+  local dist=0
+  local shortest_dist=1000
+  local closest=nil
 
-  dist = distance(target, obj) 
-  if obj:is_active() == true and dist <= shortest_dist and dist > 1 then
-   if(tags != nil) then   
-    for tag in all(tags) do 
-     if(obj:get_tag() == tag) then
-      closest = obj 
-      shortest_dist = dist
-     end
+  for obj in all(game_objects) do
+    if obj:is_active() == true then
+      if(obj:get_tag() == tag) then
+        dist = distance(target, obj)
+        if(dist < shortest_dist and dist > 1) then
+          closest = obj
+          shortest_dist = dist
+        end
+      end
     end
-   else
-    closest = obj 
-    shortest_dist = dist
-   end
   end
- end
- return closest
+  return closest
 end
-
 -- ##make gameobject
 function make_game_object(x, y, tag, properties)
  
