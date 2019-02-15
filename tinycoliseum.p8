@@ -1105,7 +1105,7 @@ function closest_obj(target, tag)
   for obj in all(game_objects) do
     if obj:is_active() == true then
       if(obj:get_tag() == tag) then
-        dist = distance(target, obj)
+        dist = fast_distance(target, obj)
         if(dist < shortest_dist and dist > 1) then
           closest = obj
           shortest_dist = dist
@@ -1203,9 +1203,11 @@ function move_toward(current, target, move_speed)
 end
 
 function distance(current, target)
- if target == nil then return nil end
- local dist = 
- -- if dist > 178 then return 1 else return dist end 
+ -- if target == nil then return nil end
+ return sqrt(fast_distance(current, target))
+end
+
+function fast_distance(current, target)
  return (target.x - current.x)^2 + (target.y - current.y)^2
 end
 
