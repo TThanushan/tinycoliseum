@@ -1204,9 +1204,9 @@ end
 
 function distance(current, target)
  if target == nil then return nil end
- local dist = sqrt((target.x - current.x)^2 + (target.y - current.y)^2)
+ local dist = 
  -- if dist > 178 then return 1 else return dist end 
- return sqrt((target.x - current.x)^2 + (target.y - current.y)^2)
+ return (target.x - current.x)^2 + (target.y - current.y)^2
 end
 
 function do_camera_shake()
