@@ -31,7 +31,7 @@ local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=
 local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=3, alivee=0, enemy_limit = 60}}
 local item_spawnerinfos = {x=0, y=0, tag='item_spawner', properties={timer=0, time_between_spawn=3}}
 local playerinfos = {health=3000, move_speed=1}
-local debugmode = false
+local debugmode = true
 
 
 
