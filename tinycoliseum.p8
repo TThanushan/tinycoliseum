@@ -2,6 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 15
 __lua__
 
+-- tinycoliseum by wombart
 local game_objects = nil
 local part
 -- shake var 
@@ -23,6 +24,16 @@ local camy=64
 
 local whiteframe = false
 local start_time = 6
+
+local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=rnd(8)+4, text_arr={'come here !',
+   'aaargh !','huh !', randtext=flr(rnd(3))}}
+
+local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=3, alivee=0, enemy_limit = 60}}
+local item_spawnerinfos = {x=0, y=0, tag='item_spawner', properties={timer=0, time_between_spawn=3}}
+local playerinfos = {health=3000, move_speed=1}
+local debugmode = false
+
+
 
 -- ##init
 function _init()
@@ -47,20 +58,21 @@ function _draw()
 
  local spawner = search_gameobject('spawner')
 
- -- spe_print('fps:'..stat(7),camx+ 0, 11+camy, 11, 3)
+if (debugmode) then
+ spe_print('fps:'..stat(7),camx+ 0, 11+camy, 11, 3)
  -- spe_print('object:'..#game_objects,camx+ 0, 20+camy, 8, 2)
- -- spe_print('object:'..#enemies,camx+ 0, 20+camy, 8, 2)
+ spe_print('object:'..#enemies,camx+ 0, 20+camy, 8, 2)
  -- spe_print('time:'..flr(time()),camx-64, camy-64, 8, 2)
  -- if spawner != nil then
  -- spe_print('e:'..search_gameobject('spawner').alivee,camx+ 0, 30 +camy, 8, 2)
  -- end
-  -- spe_print('mem_use:'..stat(0),camx+ 0, 20+camy, 8, 2)
- -- spe_print('all_cpu:'..stat(1),camx+ 0, 30+camy, 9, 4)
- -- spe_print('sys_cpu:'..stat(2),camx+ 0, 40+camy, 8, 2)
+ -- spe_print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
+ -- spe_print('all_cpu:'..stat(1),camx+ 0, 40+camy, 9, 4)
+ -- spe_print('sys_cpu:'..stat(2),camx+ 0, 50+camy, 8, 2)
 
  -- spe_print(camx, camx, camy, 8, 2)
  -- spe_print(camy, camx, camy, 8, 2)
-
+ end
 end
 
 function tuto()
@@ -239,15 +251,10 @@ function init_all_gameobject()
 
  cam = make_game_object(64, 64, 'camera', {newposition = {x=0, y=0}})
 
- make_game_object(0, 0, 'spawner', {
-  timer=0,
-  time_between_spawn=3,
-  alivee=0
-  })
-  make_game_object(0, 0, 'item_spawner', {
-  timer=0,
-  time_between_spawn=3
-  })
+ make_game_object(spawner_infos.x , spawner_infos.y, spawner_infos.tag, {timer=spawner_infos.properties.timer, time_between_spawn=spawner_infos.properties.time_between_spawn, alivee=spawner_infos.properties.alivee})
+ make_game_object(item_spawnerinfos.x , item_spawnerinfos.y, item_spawnerinfos.tag, {timer=item_spawnerinfos.properties.timer, time_between_spawn=item_spawnerinfos.properties.time_between_spawn})
+
+
 end
 
 function init_all_list()
@@ -258,7 +265,6 @@ end
 
 
 function draw_map()
- 
  for i=5, 30 do
   local x, y = rnd(140)+8,rnd(140)+8
   add_decors(7+flr(rnd(5)),x, y) 
@@ -276,7 +282,7 @@ end
 function random_enemy_spawning()
  local spawner = search_gameobject('spawner')
  if(spawner == nil) then return end
- if spawner.timer <= time() and spawner.alivee < 25 then
+ if spawner.timer <= time() and spawner.alivee < spawner_infos.properties.enemy_limit then
   sfx(11)
   if spawner.time_between_spawn > 1 then spawner.time_between_spawn *= 0.98 end
 
@@ -314,33 +320,32 @@ function random_item_spawning()
   sfx(10)
   local x, y = rnd(120)+8, rnd(120)+8
   hit_part(x+4,y+4, {2})
-
-
+  local item_sprite = 24 
 
   if random >= 0 and random <= 1 then
-   make_item(x, y, 250,'item_heart', {24})
+   make_item(x, y, 250,'item_heart', {item_sprite})
   elseif random >= 2 and random <= 4 then
-   make_item(x, y, 250,'item_gun', {24})
+   make_item(x, y, 250,'item_gun', {item_sprite})
   elseif random >=5 and random <=6 then
-   make_item(x, y, 250,'item_speedboot', {24})
+   make_item(x, y, 250,'item_speedboot', {item_sprite})
   elseif random >=7 and random <=8 then
    if time() > 60 then
-    make_item(x, y, 250,'item_superbow', {24})
+    make_item(x, y, 250,'item_superbow', {item_sprite})
    else
-     make_item(x, y, 450,'item_gun', {24})
+     make_item(x, y, 450,'item_gun', {item_sprite})
    end
 
   elseif random >= 9 and random <= 10 then
    if time() > 120 then
-    make_item(x, y, 450,'item_turret', {24})
+    make_item(x, y, 450,'item_turret', {item_sprite})
    else
-     make_item(x, y, 450,'item_gun', {24})
+     make_item(x, y, 450,'item_gun', {item_sprite})
    end
-  elseif random >= 11 and random <= 12 and time() > 60 then
+  elseif random >= 11 and random < 13 and time() > 60 then
    if time() > 160 then
-    make_item(x, y, 450,'item_star', {24})
+    make_item(x, y, 450,'item_star', {item_sprite})
    else
-    make_item(x, y, 450,'item_gun', {24})
+    make_item(x, y, 450,'item_gun', {item_sprite})
    end
   end 
   -- if rnd(3) > 1 then make_item(rnd(120)+8, rnd(120)+8, 150,'item_gun', {24}) end
@@ -376,6 +381,8 @@ function make_item(x, y, mage,tag, spritearr)
    
    spr(spritearr[self.spriteindex], self.x, self.y)
    pal()
+
+
   end,
   update=function(self)
    self.age += 1
@@ -416,17 +423,17 @@ end
 function make_player()
 
  make_game_object(rnd(64)+20,rnd(64)+20, 'player', {
-  move_speed=1,
+  move_speed=playerinfos.move_speed,
   idle_spr=1,
   current_spr=idle_spr,
   anim_index=0,
   anim_timer=0,
   walk_spr={2,3},
-  inventory = {mushroom={timer=0, duration=2}, speedboot={timer=0, duration =4, speed = 1.5}, 
+  inventory = {pickup_range=100, mushroom={timer=0, duration=2}, speedboot={timer=0, duration =4, speed = 1.5}, 
   superbow={timer=0, duration=10, damage=4, attack_speed=1, bullet_speed=230, attack_timer=0, range=65, bullet_sprite=56, backoff=500}},
   gun={active=false, duration=15, timer=0, backoff=150, move_speed=350,
    sprite=41, attack_speed=0.5,  first_attack_speed= 0.5, attack_timer=0, range=50, damage=2},
-  health=3,
+  health=playerinfos.health,
   target,
   moving=false,
   press_once=0,
@@ -440,9 +447,6 @@ function make_player()
   find_target=function(self)
    self.target = closest_obj(self, 'enemy')
    -- self.move_point.target = 
-  end,
-  update_pet=function(self)
-   rotate(self.x, self.y, self.pet.radius, self.pet.degrees, self.pet)
   end,
   roll=function(self)
  
@@ -472,13 +476,14 @@ function make_player()
    end
    sfx(0)
    move_toward(self, self.rolling, self.rolling.speed)
-   if(distance(self, self.rolling) <= 4) then self.rolling.state = false end
+
+   if(fast_distance(self, self.rolling) <= self.rolling.distance) then self.rolling.state = false end
 
   end,
   take_item=function(self)
    for obj in all(game_objects) do
     local tag = obj:get_tag()
-    if obj:is_active() and distance(self, obj) < 10 then
+    if obj:is_active() and fast_distance(self, obj) < self.inventory.pickup_range then
      -- make_item(x, y, 300,'item_heart', {54, 55})
      if sub(tag, 6,12) == 'heart' then  sfx(8)
       obj:disable()  
@@ -490,21 +495,26 @@ function make_player()
      end
      elseif sub(tag, 6,14) =='gun' then sfx(8)
       self.gun.active = true self.gun.timer = time() + self.gun.duration
-      obj:disable() obj:disable()  show_message('bow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+      obj:disable() show_message('bow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+
      elseif sub(tag, 6,22) =='speedboot' then sfx(8)
       self.move_speed = self.inventory.speedboot.speed
       self.inventory.speedboot.timer = time() + self.inventory.speedboot.duration 
       obj:disable()  show_message('speedboot', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+
      elseif sub(tag, 6,22) =='superbow' then sfx(8)
       self.inventory.superbow.timer = time() + self.inventory.superbow.duration 
-      obj:disable() obj:disable()  show_message('superbow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+      obj:disable()   show_message('superbow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+
      elseif sub(tag, 6,22) =='mushroom' then sfx(8)
       self.inventory.mushroom.timer = time() + self.inventory.mushroom.duration
       obj:disable()  show_message('toxic mushroom', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+
      elseif sub(tag, 6,22) =='turret' then sfx(8)
       obj:disable()  show_message('turret', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
       local turret = make_turret(self.x, self.y, 'turret', 15, 55, 0.5, 21, 0, 
      {damage=4*(time()/6), bullet_speed=400,  backoff=300, attack_timer=0, bullet_sprite=41})
+
      elseif sub(tag, 6,22) =='star' then sfx(16)
       self.invicible.timer = time() + 10
       self.invicible.state = true
@@ -527,12 +537,12 @@ function make_player()
   end,
   item_manager=function(self)
 
-   if self.inventory.speedboot.timer <= time() then self.move_speed = 1 end
+   if self.inventory.speedboot.timer <= time() then self.move_speed = playerinfos.move_speed end
    if self.inventory.superbow.timer > time() and self.inventory.superbow.attack_timer <= time()  then
 
     for obj in all(game_objects) do
       if obj:get_tag()== 'enemy' and obj:is_active() 
-      and distance(self, obj) <= self.inventory.superbow.range then
+      and fast_distance(self, obj) <= self.inventory.superbow.range^2 then
        -- shake_camera(1)
        local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.superbow.damage,
         self.inventory.superbow.backoff, true, self.inventory.superbow.bullet_speed,
@@ -548,7 +558,7 @@ function make_player()
    end
 
    if self.gun.active == true then
-    if(self.target != nil and self.target:is_active() == true and distance(self, self.target) <= self.gun.range) then
+    if(self.target != nil and self.target:is_active() == true and fast_distance(self, self.target) <= self.gun.range^2) then
      if self.gun.attack_speed > 0.05 then self.gun.attack_speed *= 0.998 end
      if self.gun.attack_timer <= time() then 
       self.gun.attack_timer = time() + self.gun.attack_speed
@@ -643,7 +653,7 @@ function make_player()
    self.anim_timer = time()+0.125
   end,
   update=function(self)
-   if self.stopped then return end
+   -- if self.stopped then return end
    self:find_target()
    self:is_alive()
    self:update_invicible()
@@ -654,15 +664,20 @@ function make_player()
    self:is_moving()
   end,
   draw=function(self)
-   if self.stopped then return end
+   -- if self.stopped then return end
    -- draw cursor on player.
    draw_outline_spr(23, self.x+shkx, self.y-12+shky)
    spr(23, self.x+shkx, self.y-12+shky)
    self:display_score()
 
    if self.moving then smoke_part_custom(self:center('x'),self:center('y')+6, rnd(2)+3, rnd(25)+10, 0.125,{9, 4}) end
-   if self.gun.active == true then spe_print('bow',self.x-1, self.y-8, 9, 4) 
-   draw_circle(self:center('x'), self:center('y'), 9, 4, self.gun.range) end
+
+   -- draw gun range.
+   if self.gun.active == true then 
+    -- spe_print('bow',self.x-1, self.y-8, 9, 4) 
+
+    draw_circle(self:center('x'), self:center('y'), 9, 4, self.gun.range) 
+   end
    if self.inventory.superbow.timer > time() then spe_print('! superbow !',self.x-16, self.y-8, 9, 4)
      draw_circle(self:center('x'), self:center('y'), 9, 2, self.inventory.superbow.range) end
    -- pset(self.rolling.x, self.rolling.y)
@@ -708,7 +723,7 @@ function make_turret(x, y, tag, duration, range, attack_speed, sprite, sound, bu
    local target = closest_obj(self, 'enemy')
    if target ==nil then return end
       if target:get_tag()== 'enemy' and target:is_active() 
-      and distance(self, target) <= self.range then
+      and fast_distance(self, target) <= self.range^2 then
        -- shake_camera(2)
        local new_bullet = make_bullet(self:center('x'), self:center('y'), self.bullet_infos.damage,
         self.bullet_infos.backoff, true, self.bullet_infos.bullet_speed,
@@ -778,45 +793,13 @@ function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, 
   sprite=sprite,
   target=target,
   rotate_state=rotate,
+  hit_range=50,
   direction={x=target.x, y=target.y},
-  rotate=function(self)
-   
-   local radian=atan2(self.x - self.target.x, self.y - self.target.y )
-   local degrees=360*radian/(2*3.14)
-   local num=0
-    
-   if (degrees < 4 and degrees > 0)  or (degrees > 55 and degrees < 61) then
-    spr(self.sprite, self:center('x'), self:center('y'), 1, 1, true)
-
-   elseif degrees > 2 and degrees < 12 then
-    spr(self.sprite+2, self:center('x'), self:center('y'), 1, 1, true, true)   
-   
-   elseif degrees > 10 and degrees < 18 then
-    spr(self.sprite+1, self:center('x'), self:center('y'), 1, 1, false, true)   
-   
-   elseif degrees > 16 and degrees < 27 then
-    spr(self.sprite+2, self:center('x'), self:center('y'), 1, 1, false, true)   
-   
-   elseif degrees > 25 and degrees < 33 then
-    spr(self.sprite, self:center('x'), self:center('y'))   
-   
-   elseif degrees > 31 and degrees < 41 then
-    spr(self.sprite+2, self:center('x'), self:center('y'))   
-   
-   elseif degrees > 39 and degrees < 47 then
-    spr(self.sprite+1, self:center('x'), self:center('y'))   
-   
-   elseif degrees > 45 and degrees < 57 then
-    spr(self.sprite+2, self:center('x'), self:center('y'), 1, 1, true)   
-
-   end
-
-  end,
   update=function(self)
    if self.target:is_active() == false then self:disable() end
    -- self.move_speed *= 0.98
    if(follow) then self:move_follow() else self:move_straight() end
-   if(distance(self, self.target) <= 5 and self.target:is_active() == true and self.target:is_alive()) then
+   if(fast_distance(self, self.target) <= self.hit_range and self.target:is_active() == true and self.target:is_alive()) then
     -- backoff the target
     self.target:take_damage(damage)
 
@@ -841,7 +824,6 @@ function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, 
   move_straight=function(self)
    move_toward(self.direction, self, -self.move_speed)
    move_toward(self, self.direction, self.move_speed)
-   if(distance(self, self.target) >= 80) then self:explode() self:disable() end
   end,
   move_follow=function(self)
     move_toward(self, self.target, self.move_speed)
@@ -881,7 +863,8 @@ function camera_follow()
  local _player= player 
 
  local cam = main_camera
- local dist = distance(_player, cam)
+ local dist = fast_distance(_player, cam)
+ dist /= dist
  local shx, shy= 0, 0
 
 
@@ -928,23 +911,19 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   current_spr=33,
   anim_timer=0,
   anim_index=0,
-  attack_info={damage=1, attack_speed=1, timer=0},
+  attack_info={damage=1, attack_speed=1, timer=0, attack_range=9},
   walk_spr=walk_spr,
   max_health=health,
   health=health,
   moving=false,
   inv_frame=false,
-  speak_info={timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=rnd(8)+4, text_arr={'come here !',
-   'i saw him first !', 'you better run !', 'prize is mine !', 'mine mine mine',
-   'you are dead !', 'fus-ro-dah !!!', 'show me your moves!','omae wa mou shindeiru',
-   'ora ora ora','you wanna taste my axe ?', 'you are a dead man !','aaargh !',
-    'huh !', 'aaaaaaahhh',  randtext=flr(rnd(5))}},
+  speak_info=enemy_text,
   move_point={state=false, x=40, y=40, timer=0, move_rand=5, target=nil},
   exp=0,
   sprite=1,
   target,
-  gun={active=false, duration=5, timer=0, backoff=150, move_speed=100,
-   sprite=55, attack_speed=6,  first_attack_speed= 6, attack_timer=0, range=50, damage=1},
+  gun={active=false, duration=5, timer=0, backoff=150, move_speed=10,
+   sprite=55, attack_speed=6,  first_attack_speed= 6, attack_timer=0, range=25, damage=1},
 
   find_target=function(self)
    -- self.move_point.target = closest_obj(self, {'player'})
@@ -953,7 +932,7 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   end,
   mage_attack=function(self)
 
-  if(self:get_target() != nil and self:get_target():is_active() == true and distance(self, self:get_target()) <= self.gun.range) then
+  if(self:get_target() != nil and self:get_target():is_active() == true and fast_distance(self, self:get_target()) <= self.gun.range^2) then
    if self.gun.attack_timer <= time() then 
     self.gun.attack_timer = time() + self.gun.attack_speed
     -- shake_camera(2)
@@ -970,8 +949,8 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
    if self.gun.timer <= time() then self.gun.active = false end
   end,
   melee_attack=function(self)
-   local dist = distance(self, self:get_target())
-   if dist != nil and dist < 3 and time() >= self.attack_info.timer and self:get_target().health > 0 then 
+   local dist = fast_distance(self, self:get_target())
+   if dist != nil and dist < self.attack_info.attack_range and time() >= self.attack_info.timer and self:get_target().health > 0 then 
 
     -- sfx(2)
     if  self:get_target():take_damage(self.attack_info.damage) == true then
@@ -1015,8 +994,8 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
     local points = self.max_health + rnd(5)
     if player!=nil then player.score += points end
     show_message('+'..flr(points), self.x, self.y, 8, 1, 5, 2, 'score', true)
--- show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_time, tag, moving, ui_state)
-    -- local spawner = search_gameobject('spawner')
+     -- show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_time, tag, moving, ui_state)
+     -- local spawner = search_gameobject('spawner')
      -- smoke_part_custom(self:center('x'),self:center('y'), rnd(5)+7, rnd(25)+10, 0.25,{4, 2})    -- move_toward(self, target, move_speed)
      -- smoke_part_custom(self:center('x'),self:center('y'), rnd(8)+10, rnd(25)+10, 2,{8})    -- move_toward(self, target, move_speed)
      sfx(9)
@@ -1027,8 +1006,9 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
       sfx(6)
       -- show_message('boom !', self:center('x'),self:center(' y'), 8, 1, 100, 3, 'score', true)
       shake_camera(10)
+      local explode_range = 90
       for obj in all(enemies) do
-       if obj:is_active() and obj:is_alive() and distance(self, obj) < 30 then
+       if obj:is_active() and obj:is_alive() and fast_distance(self, obj) < explode_range then
 
         smoke_part_custom(self:center('x'),self:center(' y'), 30, rnd(100)+100, 0.5,{9, 4}) -- orange and brown circle.
         obj:take_damage(obj.max_health)
@@ -1049,9 +1029,9 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
    
 
    if(self:get_target() == nil) then self.moving = false return end
-   if distance(self, self:get_target()) > 2 then
+   if fast_distance(self, self:get_target()) > self.attack_info.attack_range then
     move_toward(self, self:get_target(), self.move_speed)
-    self.moving = true
+    self.moving = true   
    end
   end,
   get_target=function(self)
@@ -1099,14 +1079,14 @@ end
 
 function closest_obj(target, tag)
   local dist=0
-  local shortest_dist=1000
+  local shortest_dist=32000
   local closest=nil
 
   for obj in all(game_objects) do
     if obj:is_active() == true then
       if(obj:get_tag() == tag) then
         dist = fast_distance(target, obj)
-        if(dist < shortest_dist and dist > 1) then
+        if(dist < shortest_dist) then
           closest = obj
           shortest_dist = dist
         end
@@ -1189,16 +1169,18 @@ end
 
 function move_toward(current, target, move_speed)
  if(move_speed == 0) then move_speed = 1 end
- 
+
  local dist= distance(current, target)
+
  if dist < 1 then return end
  local direction_x = (target.x - current.x) / 60 * move_speed
  local direction_y = (target.y - current.y) / 60 * move_speed
- 
  -- if direction_x > 500 or direction_y > 500 then return end
  if dist < 1 then dist = 0.25 end
+
  current.x += direction_x / dist
  current.y += direction_y / dist
+
  return current.x, current.y
 end
 
@@ -1630,7 +1612,7 @@ __map__
 000c0d0c0d0c0d0c0d0c0d0c0d0c0d0c0d0c0d0c0d0c0d0c0d0c0d0c0d0c0d0c0d1c1d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001c1d1c1d1c1d1c1d1c1d1c1d1c1d1c1d1c1d1c1d1c1d1c1d1c1d1c1d1c1d1c1d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
-000100001171311713117131270313703137031470314703157031670317703197031a7031b7031d7031e7031f7032e70327703147032d7032e70324703137032470324703247032470324703247032470324703
+000100000173301703017030173313703137031470314703157031670317703197031a7031b7031d7031e7031f7032e70327703147032d7032e70324703137032470324703247032470324703247032470324703
 010200001b3230f033276131c61018610006100761007610000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 010100000c0130c0130c0130c0130c0130c013000002b1002c1002e10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 01020000336102e610126100b6100a1130111301113011130111301113011130111307203062030620002200012001f0001e0001d0001c0001b0000d0000c0000b0000b0000a0000010000100001000010000100
@@ -1647,19 +1629,19 @@ __sfx__
 000300003a51030510275101b5100c510055100351013500115000f5000a5000a50007500055000f0000f0000f0000f0000b6000b6000b600120000f00014000110000f0001000013000180001e0000f00037000
 0102000021653216532165321653216532165336153321532f1532d1532a15327153241532315322153211531e1531e1531c1531b1531a1531a15318153171531615314153101530f1530d1530c1530e1530c153
 01030000030230502306023070230a1230a1230c1230c1230f12311123111231312313123161231612316123165231852318523185231b5231b5231d5231f5232252324523275232e52330523355233a5233f523
+002500010161001600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-010900200e023000000e033000000e023000000e023000000e023000000e0330000000000000000e033000000e023000000e033000000e023000000e023000000e023000000e0330000000000000000e03300000
-010600202501224002240022400227012240022400224002250122400224002240022701224002270122400224002240022501224002270122400227012240022501224002240022400227012240022400224002
-010a00200e023000000e033000000e023000000e023000000e023000000e033000000e023000000e023000000e023000000e033000000e023000000e023000000e023000000e033000000e023000000e02300000
-010c00201a1030c1030310518105031050c1030c103031050c103031050c1033f1053f1050c1030c103031050c1030c10303105181050c1030c1030c103031050c1030c10303105181050c105031050310500000
-010c0020000001a1030c1030310518105031050c1030c103031050c103031050c1033f1053f1050c1030c103031050c1030c10303105181050c1030c1030c103031050c1030c10303105181050c1050310503105
-010c0020191041910519105191051b3031b3031b3031b3031e1041e1051e1051e10522105221052210500006191041910519105191051b1051b1061b1061b1061e1041e1051e1051e10522105221052210500006
-010c0000040030e003100030e0030c0030c0030f1030d1030c0030e0030e0030c0030e1040e1040c0030c003101030e003101030e0030c0030c0030c0030c0030e0030e0030c0030e1030c1030c0030c0030c003
-000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000000000000000000000000000031000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010c0020000000c0230c023000000c023000000c0230c023000000c023000000c02300000000000c0230c023000000c0230c023000000c0230c0230c0230c023000000c0230c023000000c0230c023000000c023
+010c00200c0230c0230c003000000c0030c0230c0230c0030c0230c0030c0230c0030c0030c0230c0230c0030c0230c0230c0030c0030c0230c0230c0230c0030c0230c0230c0030c0030c0030c0031800300003
+010c0020000000c0030332518605033250c0030c003033250c003033250c0033f2253f2250c0030c003033250c0030c00303325186050c0030c0030c003033250c0030c00303325186050c605033250332503325
+010c0020000000c0030c00303305186250c0030c0030c003033050c0030c00303305186250c6250330503305033050c0030c00303305186250c0030c0030c003033050c0030c00303305186250c6250330500000
+010c00200c1050312518105031250c1050c105031250c105031250c1053f1253f1250c1050c105031250c1050c10503125181050c1050c1050c105031250c1050c10503125181050c10503125031250312500105
+010c0020186050c6050c003033051862518625186050c003033050c0030c00303305186250c625186250c625186050c6050c003033051862518625186050c003033050c0030c00303305186250c625186250c625
+010c0020000000c0030c00303305186250c0030c0030c003033050c0030c00303305186250c6250330503305033050c0030c00303305186250c0030c0030c003033050c0030c00303305186250c6250330500000
+010c0020000000c0030332518605033250c0030c003033250c003033250c0033f2253f2250c0030c003033250c0030c00303325186050c0030c0030c003033250c0030c00303325186050c605033250332503325
+010c002000000000000c0030332518605033250c0030c003033250c003033250c0033f2253f2250c0030c003033250c0030c00303325186050c0030c0030c003033250c0030c00303325186050c6050332503325
+010c00200c0330c0330333518625033350c0330c033033350c03303335186253f2353f2350c0330c033033350c0330c0330333518625033350c0330c033033350c0330c03303335186250c625033350333503335
 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1695,15 +1677,17 @@ __sfx__
 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __music__
-01 14555740
-02 14154040
-00 15144040
-00 16154040
-00 16154040
+00 165b5c40
 00 16175740
-00 16175840
-00 16175858
-02 16175859
+00 1619585a
+00 1d595d5a
+00 1d595d5a
+02 1619585a
+00 5659585a
+00 16175740
+02 16154040
+02 15144040
+00 54544040
 00 00000000
 00 00000000
 00 00000000
@@ -1714,14 +1698,12 @@ __music__
 00 00000000
 00 00000000
 00 00000000
+00 16154040
 00 00000000
 00 00000000
 00 00000000
 00 00000000
-00 00000000
-00 00000000
-00 00000000
-00 00000000
+00 15144040
 00 00000000
 00 00000000
 00 00000000
