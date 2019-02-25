@@ -28,7 +28,7 @@ local start_time = 6
 local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=rnd(8)+4, text_arr={'come here !',
    'aaargh !','huh !', randtext=flr(rnd(3))}}
 
-local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=3, alivee=0, enemy_limit = 500}}
+local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=2, alivee=0, enemy_limit = 80}}
 local item_spawnerinfos = {x=0, y=0, tag='item_spawner', properties={timer=0, time_between_spawn=3}}
 local playerinfos = {health=3, move_speed=1}
 local debugmode = false
@@ -330,20 +330,20 @@ function random_item_spawning()
 
   hit_part(x+4,y+4, {2})
 
-  local item_sprite = 24 
+  local item_sprite = 40 
 
   if random < 2 then
-   make_item(x, y, 250,'item_heart', {item_sprite})
+   make_item(x, y, 250,'item_heart', {40})
   elseif random < 4 then
-   make_item(x, y, 250,'item_gun', {item_sprite})
+   make_item(x, y, 250,'item_gun', {39})
   elseif random < 6 then
-   make_item(x, y, 250,'item_speedboot', {item_sprite})
+   make_item(x, y, 250,'item_speedboot', {38})
   elseif random < 8 then
-    make_item(x, y, 250,'item_superbow', {item_sprite})
+    make_item(x, y, 250,'item_superbow', {37})
   elseif random < 10 then
-    make_item(x, y, 450,'item_turret', {item_sprite})
+    make_item(x, y, 450,'item_turret', {22})
   elseif random < 12 then
-    make_item(x, y, 450,'item_star', {item_sprite})
+    make_item(x, y, 450,'item_star', {6})
   end   
   -- if rnd(3) > 1 then make_item(rnd(120)+8, rnd(120)+8, 150,'item_gun', {24}) end
 
@@ -429,9 +429,9 @@ function make_player()
   anim_timer=0,
   walk_spr={2,3},
   inventory = {pickup_range=100, mushroom={timer=0, duration=2}, speedboot={timer=0, duration =4, speed = 1.5}, 
-  superbow={timer=0, duration=10, damage=4, attack_speed=1, bullet_speed=230, attack_timer=0, range=65, bullet_sprite=56, backoff=500}},
+  superbow={timer=0, duration=10, damage=4, attack_speed=1, bullet_speed=230, attack_timer=0, range=65, bullet_sprite=56, backoff=500},
   gun={active=false, duration=15, timer=0, backoff=150, move_speed=350,
-   sprite=41, attack_speed=0.5,  first_attack_speed= 0.5, attack_timer=0, range=50, damage=2},
+   sprite=41, attack_speed=1,  first_attack_speed= 1, attack_timer=0, range=50, damage=4}},
   health=playerinfos.health,
   target,
   moving=false,
@@ -493,7 +493,7 @@ function make_player()
        show_message('max health', self.x, self.y, 8, 2, 10, 2, 'item_msg', true)
      end
      elseif sub(tag, 6,14) =='gun' then sfx(8)
-      self.gun.active = true self.gun.timer = time() + self.gun.duration
+      self.inventory.gun.active = true self.inventory.gun.timer = time() + self.inventory.gun.duration
       obj:disable() show_message('bow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
 
      elseif sub(tag, 6,22) =='speedboot' then sfx(8)
@@ -537,8 +537,8 @@ function make_player()
   item_manager=function(self)
 
    if self.inventory.speedboot.timer <= time() then self.move_speed = playerinfos.move_speed end
-   if self.inventory.superbow.timer > time() and self.inventory.superbow.attack_timer <= time()  then
 
+   if self.inventory.superbow.timer > time() and self.inventory.superbow.attack_timer <= time()  then
     for obj in all(game_objects) do
       if obj:get_tag()== 'enemy' and obj:is_active() 
       and fast_distance(self, obj) <= self.inventory.superbow.range^2 then
@@ -556,24 +556,24 @@ function make_player()
     self.inventory.superbow.attack_timer = time() + self.inventory.superbow.attack_speed
    end
 
-   if self.gun.active == true then
-    if(self.target != nil and self.target:is_active() == true and fast_distance(self, self.target) <= self.gun.range^2) then
-     if self.gun.attack_speed > 0.05 then self.gun.attack_speed *= 0.998 end
-     if self.gun.attack_timer <= time() then 
-      self.gun.attack_timer = time() + self.gun.attack_speed
+   if self.inventory.gun.active == true then
+    if(self.target != nil and self.target:is_active() == true and fast_distance(self, self.target) <= self.inventory.gun.range^2) then
+     if self.inventory.gun.attack_speed > 0.5 then self.inventory.gun.attack_speed *= 0.998 end
+     if self.inventory.gun.attack_timer <= time() then 
+      self.inventory.gun.attack_timer = time() + self.inventory.gun.attack_speed
       
       -- shake_camera(1)
-      local new_bullet = make_bullet(self:center('x'), self:center('y'), self.gun.damage,self.gun.backoff, true, 
-       self.gun.move_speed,self.gun.sprite, self.target, 'bullet', true) 
+      local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.gun.damage,self.inventory.gun.backoff, true, 
+       self.inventory.gun.move_speed,self.inventory.gun.sprite, self.target, 'bullet', true) 
       if new_bullet != nil then  
        new_bullet:set_target(self.target)
       end
      end
     end
   else
-   self.gun.attack_speed=self.gun.first_attack_speed
+   self.inventory.gun.attack_speed=self.inventory.gun.first_attack_speed
    end
-   if self.gun.timer <= time() then self.gun.active = false end
+   if self.inventory.gun.timer <= time() then self.inventory.gun.active = false end
 
   end,
   update_invicible=function(self)
@@ -651,35 +651,13 @@ function make_player()
    end
    self.anim_timer = time()+0.125
   end,
-  update=function(self)
-   -- if self.stopped then return end
-   self:find_target()
-   self:is_alive()
-   self:update_invicible()
-   self:item_manager()
-   self:take_item()
-   self:move_input()
-   self:roll()
-   self:is_moving()
+  draw_cursor=function(self)
+    -- draw cursor on player.
+    draw_outline_spr(23, self.x+shkx, self.y-12+shky)
+    spr(23, self.x+shkx, self.y-12+shky)
+  
   end,
-  draw=function(self)
-   -- if self.stopped then return end
-   -- draw cursor on player.
-   draw_outline_spr(23, self.x+shkx, self.y-12+shky)
-   spr(23, self.x+shkx, self.y-12+shky)
-   self:display_score()
-
-   if self.moving then smoke_part_custom(self:center('x'),self:center('y')+6, rnd(2)+3, rnd(25)+10, 0.125,{9, 4}) end
-
-   -- draw gun range.
-   if self.gun.active == true then 
-    -- spe_print('bow',self.x-1, self.y-8, 9, 4) 
-
-    draw_circle(self:center('x'), self:center('y'), 9, 4, self.gun.range) 
-   end
-   if self.inventory.superbow.timer > time() then spe_print('! superbow !',self.x-16, self.y-8, 9, 4)
-     draw_circle(self:center('x'), self:center('y'), 9, 2, self.inventory.superbow.range) end
-   -- pset(self.rolling.x, self.rolling.y)
+  make_blinking=function(self)
    -- make blinking
    if self.invicible.state then
     draw_outline_spr(self.current_spr, self.x+shkx, self.y+shky)
@@ -696,9 +674,38 @@ function make_player()
     draw_outline_spr(self.current_spr, self.x+shkx, self.y+shky)
     spr(self.current_spr,self.x+shkx, self.y+shky) 
    end
+  end,
+  draw_weapon_range=function(self, timer, range)
+    if timer > time() then 
+     draw_circle(self:center('x'), self:center('y'), 9, 4, range) 
+    end
+  end,
+
+  update=function(self)
+   -- if self.stopped then return end
+   self:find_target()
+   self:is_alive()
+   self:update_invicible()
+   self:item_manager()
+   self:take_item()
+   self:move_input()
+   self:roll()
+   self:is_moving()
+  end,
+  draw=function(self)
+   -- if self.stopped then return end
+   self:display_score()
+
+   if self.moving then smoke_part_custom(self:center('x'),self:center('y')+6, rnd(2)+3, rnd(25)+10, 0.125,{9, 4}) end
+   self:draw_weapon_range(self.inventory.gun.timer, self.inventory.gun.range)
+   self:draw_weapon_range(self.inventory.superbow.timer, self.inventory.superbow.range)
+
+
+   self:make_blinking()
 
    spe_print('hp '..self.health, self.x+shkx, self.y+10+shky, 9,2)
 
+   self:draw_cursor()
   end
   })
 
@@ -997,7 +1004,7 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
       for obj in all(enemies) do
        if obj:is_active() and obj:is_alive() and fast_distance(self, obj) < explode_range then
 
-        smoke_part_custom(self:center('x'),self:center(' y'), 30, rnd(100)+100, 0.5,{9, 4}) -- orange and brown circle.
+        smoke_part_custom(self:center('x'),self:center(' y'), 30, rnd(50)+25, 0.5,{9, 4}) -- orange and brown circle.
         obj:take_damage(obj.max_health)
        end
       end
@@ -1013,8 +1020,6 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   end,
   move=function(self)
    
-
-   if(self:get_target() == nil) then self.moving = false return end
    if fast_distance(self, self:get_target()) > self.attack_info.attack_range then
     move_toward(self, self:get_target(), self.move_speed)
     self.moving = true   
@@ -1319,7 +1324,7 @@ end
 
 function blood_part(x, y, quantity, colarr)
  for i=0, quantity do
-  add_part(rnd(5)-rnd(5)+x, rnd(5)-rnd(5)+y, 5, rnd(6)+3, 500, 0, 0,colarr)
+  add_part(rnd(5)-rnd(5)+x, rnd(5)-rnd(5)+y, 5, rnd(3)+1, 500, 0, 0,colarr)
   -- add_part(x, y ,tpe, size, mage, dx, dy, colarr)
 
  end
@@ -1448,29 +1453,29 @@ function show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_tim
  end
 
 __gfx__
-22ff9944000000000000000000000000000000000009900000000000000000000000000000000000900900090000000022222444444422220099990000bbbb00
-22ff9944000990000009900000099000000000000009900000000000000000000000000000000000900909090099990022222499994422220090090000b00b00
-22ff99440009900000099000000990000009900040044004000000000000000000000000000900004009090909499490222999ff999922220000090000000b00
-22ff994400044000000440000004400000444400040440400000000000000000000000000009090009040904099949902299fffffff9992200099900000bbb00
-22ff99440044440044444440044444440044440000044000000000000099940000000000090990000900090009999990999ffffffffff99200090000000b0000
-22ff994404044040400440000004400400099000000000000000000009944440000994000099400004900990004949002fffffffffffff990000000000000000
-22ff994400000000000000900900000000000000090000900000000004444440009444400094400000900490009494009ffffffff99999f900090000000b0000
+22ff9944000000000000000000000000000000000009900000090000000000000000000000000000900900090000000022222444444422220099990000bbbb00
+22ff9944000990000009900000099000000000000009900000999000000000000000000000000000900909090099990022222499994422220090090000b00b00
+22ff99440009900000099000000990000009900040044004999999900000000000000000000900004009090909499490222999ff999922220000090000000b00
+22ff994400044000000440000004400000444400040440400999990000000000000000000009090009040904099949902299fffffff9992200099900000bbb00
+22ff99440044440044444440044444440044440000044000009990000099940000000000090990000900090009999990999ffffffffff99200090000000b0000
+22ff994404044040400440000004400400099000000000000999990009944440000994000099400004900990004949002fffffffffffff990000000000000000
+22ff994400000000000000900900000000000000090000909900099004444440009444400094400000900490009494009ffffffff99999f900090000000b0000
 22ff994400900900000900000000900000000000000000000000000000000000000000000000000000400040000000009ffffff9999999990000000000000000
 00099000000440000004400000044000000000000009900099000099000000000000000000000000000000000000000099ffff92999999990000000000000000
 00099000004994000049940000499400000000000044440094444449000000000099990000000400000002000000000099ffff99999992990000000000000000
 00099000004444000044440000444400000000000444444004444440000000000090090000000420000002900000000092ffff99999999990000000000000000
-000990000009900000044000000440000000000094422449044224400000000000000900224444209922229000000000999ff999999999990000000000000000
-00099000000990004449944004499444000000009442244904422440099999000009990022444422992222990000000099999999992999920000000000000000
-09999990049999404004400000044004002222000444444004444440049994000000000022444420992222900000000022999929999999220000000000000000
-00999900400990040090000000000900022222200044440094444449004940000009000000000420000002900000000022229999999922220000000000000000
+00099000000990000004400000044000000000009444444904422440aaaaaaa000000900224444209922229000000000999ff999999999990000000000000000
+000990000009900004499440044994400000000094444449044224404aaaaa400009990022444422992222990000000099999999992999920000000000000000
+09999990049999404094400000044004002222000444444004444440049a94000000000022444420992222900000000022999929999999220000000000000000
+00999900400990040090090000000900022222200044440094444449004940000009000000000420000002900000000022229999999922220000000000000000
 00099000004004000000090000900000002222000009900099000099000400000000000000000400000002000000000022222444444222220000000000000000
 00099000000440000004400000044000000000000000000000000000000000000000000000000000000200000004420200000000000000009000000000000000
 00999900004224000049240000492400000000002200000000999990099000000990092000000000022222000000442000000099990000009990000000000099
 099999900044440000444400004444000000000002220900009244900099900009999920004224004444444000044442000999ff999900009949900000009990
 0009900000022000000440000004400000000000920029900094449002900940099992200029920000444000004444420099fffffff999000944499999994900
-000990000002200044422440044224440000000099999999999244900244444409999220002992000044400004444404999ffffffffff9900944444444444900
-0009900004222240400440000004400400222200920029909444449002900940009922000042240000444000244440009fffffffffffff990094444444444900
-0009900040022004009000000000090002222220022209009444449000999000000220000000000000222000224400009ffffffff99999f90094444444449000
+000990000002200004422440044224400000000099999999999244900244444409999220002992000044400004444404999ffffffffff9900944444444444900
+0009900004222240409440000004400400222200920029909444449002900940009922000042240000444000244440009fffffffffffff990094444444444900
+0009900040022004009009000000090002222220022209009444449000999000000220000000000000222000224400009ffffffff99999f90094444444449000
 0009900000400400000009000090000000222200220000009999999009900000000000000000000000222000022000009ffffff9999999990094444444449000
 00000000000220000002200000022000444224444442244400000000000000000000000000090000000229090000000099ffff99999999990094444444449000
 0000000000944900009449000094490004222240042222400000000000ffff000000000009999900000022900000000000000000000000000094444444449000
