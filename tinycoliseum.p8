@@ -28,10 +28,11 @@ local start_time = 6
 local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=rnd(8)+4, text_arr={'come here !',
    'aaargh !','huh !', randtext=flr(rnd(3))}}
 
-local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=2, alivee=0, enemy_limit = 80}}
+local spawner = nil
+local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=0.25, alivee=0, enemy_limit = 800}}
 local item_spawnerinfos = {x=0, y=0, tag='item_spawner', properties={timer=0, time_between_spawn=3}}
-local playerinfos = {health=3, move_speed=1}
-local debugmode = false
+local playerinfos = {health=3000, move_speed=1}
+local debugmode = true
 
 
 
@@ -40,7 +41,9 @@ function _init()
  -- cls(15)
  -- poke(0x5f2d, 1)
  init_all_list()
-
+ -- make the spawner
+ spawner = make_game_object(spawner_infos.x , spawner_infos.y, spawner_infos.tag, {timer=spawner_infos.properties.timer, time_between_spawn=spawner_infos.properties.time_between_spawn, alivee=spawner_infos.properties.alivee})
+ init_all_gameobject()
  sfx(12)
 
 end
@@ -56,17 +59,14 @@ function _draw()
   draw_gameover()
  end
 
- local spawner = search_gameobject('spawner')
-
 if (debugmode) then
  spe_print('fps:'..stat(7),camx+ 0, 11+camy, 11, 3)
- -- spe_print('object:'..#game_objects,camx+ 0, 20+camy, 8, 2)
+ spe_print('object:'..#game_objects,camx+ 0, 20+camy, 8, 2)
  -- spe_print('object:'..#enemies,camx+ 0, 20+camy, 8, 2)
  spe_print('time:'..flr(time()),camx-64, camy-64, 8, 2)
- if spawner != nil then
-  spe_print('e:'..search_gameobject('spawner').alivee,camx-30, 30 +camy, 8, 2)
- end
- spe_print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
+ spe_print('e:'..spawner.alivee,camx-30, 30 +camy, 8, 2)
+ 
+ -- spe_print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
  spe_print('all_cpu:'..stat(1),camx+ 0, 40+camy, 9, 4)
  -- spe_print('sys_cpu:'..stat(2),camx+ 0, 50+camy, 8, 2)
 
@@ -94,10 +94,7 @@ function _update60()
   update_start()
  elseif mode == 'game' then
   update_game()
--- make_turret(x, y, tag, duration, range, attack_speed, sprite, sound, bullet_infos)
-  -- if btn(4) and time()%2 <= 1 then
-  --  make_turret(player.x, player.y, 'turret', 15, 60, 1, 21, 0, 
-  --    {damage=1, bullet_speed=200,  backoff=300, attack_timer=0, bullet_sprite=41})  end
+
  elseif mode == 'gameover' then
   update_gameover()
  end
@@ -113,16 +110,13 @@ end
 
 function start_game()
  sfx(-1, 0)
- init_all_list()
 
- init_all_gameobject()
  mode = 'game'
  draw_map()
  player = search_gameobject('player')
  main_camera = search_gameobject('camera')
 
  sfx(8)
- -- make_enemy(rnd(4)+67, 0, flr(rnd(15))+(time()/4) + 8, rnd(20)+10, 33, {50, 51},'mage')
  start_time = 6+time()
  music(0, 0, 8)
 
@@ -253,7 +247,6 @@ function init_all_gameobject()
 
  cam = make_game_object(64, 64, 'camera', {newposition = {x=0, y=0}})
 
- make_game_object(spawner_infos.x , spawner_infos.y, spawner_infos.tag, {timer=spawner_infos.properties.timer, time_between_spawn=spawner_infos.properties.time_between_spawn, alivee=spawner_infos.properties.alivee})
  make_game_object(item_spawnerinfos.x , item_spawnerinfos.y, item_spawnerinfos.tag, {timer=item_spawnerinfos.properties.timer, time_between_spawn=item_spawnerinfos.properties.time_between_spawn})
 
 
@@ -282,8 +275,7 @@ end
 
 -- ##random_enemy_spawning
 function random_enemy_spawning()
- local spawner = search_gameobject('spawner')
- if(spawner == nil) then return end
+
  if spawner.timer <= time() and spawner.alivee < spawner_infos.properties.enemy_limit then
   sfx(11)
   if spawner.time_between_spawn > 1 then spawner.time_between_spawn *= 0.98 end
@@ -293,9 +285,14 @@ function random_enemy_spawning()
 
   local rand, randmax= 0, 3
   if time() > 15 then randmax = 4 else randmax = 3 end
+   
+  spawn_enemy()
 
-  for i=0, 1 do
-  rand=flr(rnd(randmax))
+ end
+end
+
+function spawn_enemy()
+   rand=flr(rnd(randmax))
    local rand_pos_y = flr(rnd(3))
    local top_y_pos = 7
    local bot_y_pos = 140
@@ -309,13 +306,10 @@ function random_enemy_spawning()
     make_enemy(rnd(4)+67, rand_pos_y, flr(rnd(15))+(time()/6) + 3, rnd(20)+10, 33, {50, 51},'mage')
  -- make_enemy(x, y, health, move_speed, idle_spr, walk_spr)
    end
-  end
- end
-
+ 
 end
 
-
--- ##item
+-- ##item 
 function random_item_spawning()
  local item_spawner = search_gameobject('item_spawner')
  if(item_spawner == nil) then stop() end
@@ -675,9 +669,11 @@ function make_player()
     spr(self.current_spr,self.x+shkx, self.y+shky) 
    end
   end,
-  draw_weapon_range=function(self, timer, range)
+  draw_weapon_range=function(self, timer, range, col1, col2)
+    col1 = col1 or 9
+    col2 = col2 or 4
     if timer > time() then 
-     draw_circle(self:center('x'), self:center('y'), 9, 4, range) 
+     draw_circle(self:center('x'), self:center('y'), col1, col2, range) 
     end
   end,
 
@@ -698,7 +694,7 @@ function make_player()
 
    if self.moving then smoke_part_custom(self:center('x'),self:center('y')+6, rnd(2)+3, rnd(25)+10, 0.125,{9, 4}) end
    self:draw_weapon_range(self.inventory.gun.timer, self.inventory.gun.range)
-   self:draw_weapon_range(self.inventory.superbow.timer, self.inventory.superbow.range)
+   self:draw_weapon_range(self.inventory.superbow.timer, self.inventory.superbow.range, 10, 9)
 
 
    self:make_blinking()
@@ -760,14 +756,15 @@ function make_turret(x, y, tag, duration, range, attack_speed, sprite, sound, bu
    draw=function(self)
     draw_outline_spr(time()*4%2+self.sprite, self.x+shkx, self.y+shky)
     spr(time()*4%2+self.sprite, self.x+shkx, self.y+shky)
-    spe_print(flr(self.timer-time()), self.x+shkx+3, self.y+shky+8)
-    spe_print('turret', self.x+shkx-6 , self.y+shky-8)
+    spe_print(flr(self.timer-time()), self.x+shkx+3, self.y+shky+8, 9, 4)
+    spe_print('turret', self.x+shkx-6 , self.y+shky-8, 9, 4)
 
     circ(self:center('x'), self:center('y'),self.range, 2)
    end
 
   })
 end
+
 -- ##blocker
 function screen_border_blocker_check(obj)
  if obj==nil then return end
@@ -907,7 +904,6 @@ end
 function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
 
  
- local spawner = search_gameobject('spawner')
  spawner.alivee += 1
 
  make_game_object(x, y, 'enemy', {
@@ -929,7 +925,7 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   exp=0,
   sprite=1,
   target,
-  gun={active=false, duration=5, timer=0, backoff=150, move_speed=10,
+  gun={active=false, duration=5, timer=0, backoff=150, move_speed=100,
    sprite=55, attack_speed=6,  first_attack_speed= 6, attack_timer=0, range=25, damage=1},
 
   find_target=function(self)
@@ -987,7 +983,7 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
     local player = player
     local points = self.max_health + rnd(5)
     if player!=nil then player.score += points end
-    show_message('+'..flr(points), self.x, self.y, 8, 1, 5, 2, 'score', true)
+    show_message('+'..flr(points), self.x, self.y, 8, 1, 15,  0.5, 'score', true)
      -- show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_time, tag, moving, ui_state)
      -- local spawner = search_gameobject('spawner')
      -- smoke_part_custom(self:center('x'),self:center('y'), rnd(5)+7, rnd(25)+10, 0.25,{4, 2})    -- move_toward(self, target, move_speed)
@@ -1150,10 +1146,12 @@ function make_game_object(x, y, tag, properties)
   end
  end
 
- if(get_pool_object(tag)==nil) then
+ -- if(get_pool_object(tag)==nil) then
   add(game_objects, obj)
   if obj:get_tag() == 'enemy' then add(enemies, obj) end
- end
+ -- end
+
+ return obj
 
 end
 
@@ -1239,11 +1237,12 @@ function add_part(x, y ,tpe, size, mage, dx, dy, colarr)
  return p
 end
 
+local del_func = del
 function update_part()
  for p in all(part) do
   p.age+=1
   if p.mage != 0 and p.age >= p.mage or p.size <= 0 then
-   del(part, p)
+   del_func(part, p)
   end
   
   -- if p.colarr == nil then return end
@@ -1258,6 +1257,7 @@ function update_part()
   p.y+=p.dy
  end
 end
+
 function hit_part(x,y,colarr)
   for i=0, rnd(6)+4 do
   local p = add_part(rnd(5)-rnd(5)+x, rnd(5)-rnd(5)+y, 1, rnd(4)+3, rnd(5)+35, (rnd(10)-rnd(10))/30, (rnd(10)-rnd(10))/30, colarr)
@@ -1267,37 +1267,38 @@ function add_decors(n,x,y)
  local p = add_part(x, y, 6, n, 0, 0, 0, {0})
 end
 
+local circfill_func = circfill
 function draw_part()
  for p in all(part) do
   if p.tpe==0 then
    pset(p.x+shkx, p.y+shky, p.col)
   elseif p.tpe==1 then
-   circfill(p.x+shkx,p.y+shky,p.size, p.col)
+   circfill_func(p.x+shkx,p.y+shky,p.size, p.col)
    p.size -= 0.1
 
   elseif p.tpe==2 then
-   circfill(p.x+shkx,p.y+shky,p.size, p.col)
+   circfill_func(p.x+shkx,p.y+shky,p.size, p.col)
    p.size += 0.025
   elseif p.tpe==3 then
-   circfill(p.x+shkx,p.y+shky,p.size, p.col)
+   circfill_func(p.x+shkx,p.y+shky,p.size, p.col)
    p.size -= p.speed
   elseif p.tpe==5 then
-   circfill(p.x+shkx,p.y+shky,p.size, p.col)
+   circfill_func(p.x+shkx,p.y+shky,p.size, p.col)
   elseif p.tpe==6 then
    spr(p.size,p.x+shkx, p.y+shky)
   elseif p.tpe==7 then
    spr(p.size,p.x+shkx, p.y+shky)
    p.dx, p.dy *= 0.25, 0.25
   elseif p.tpe==8 then
-   circfill(p.x+shkx,p.y+shky,p.size, p.col)
+   circfill_func(p.x+shkx,p.y+shky,p.size, p.col)
    p.size -= 0.1
    p.dx, p.dy *= 0.25, 0.25
   elseif p.tpe==9 then
-   circfill(p.x+shkx,p.y+shky,p.size,p.col)
+   circfill_func(p.x+shkx,p.y+shky,p.size,p.col)
    p.size -= p.age/200
    p.dx *= 0.8
    p.dy *= 0.8
-   if p.size < 0 then del(part,p) end
+   if p.size < 0 then del_func(part,p) end
   end
  end
 end
@@ -1445,10 +1446,11 @@ function show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_tim
    end
   end
   })
- if msg != nil then
+
+ -- if msg != nil then
   msg:set_properties(_text, _x, _y, _in_color, _out_color, _speed, _display_time)
   return msg
- end
+ -- end
 
  end
 
