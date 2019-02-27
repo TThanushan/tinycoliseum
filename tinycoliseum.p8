@@ -29,10 +29,10 @@ local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=
    'aaargh !','huh !', randtext=flr(rnd(3))}}
 
 local spawner = nil
-local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=0.15, alivee=0, enemy_limit = 800}}
+local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=0.25, alivee=0, enemy_limit = 80}}
 local item_spawnerinfos = {x=0, y=0, tag='item_spawner', properties={timer=0, time_between_spawn=3}}
-local playerinfos = {health=3000, move_speed=1}
-local debugmode = true
+local playerinfos = {health=300, move_speed=1}
+local debugmode = false
 local game_objects_count = {units=0, messages=0, particles=0}
 
 
@@ -62,11 +62,11 @@ function _draw()
 if (debugmode) then
  spe_print('fps:'..stat(7),camx+ 0, 11+camy, 11, 3)
  spe_print('object:'..#game_objects,camx+ 0, 20+camy, 8, 2)
- -- spe_print('object:'..#enemies,camx+ 0, 20+camy, 8, 2)
- spe_print('time:'..flr(time()),camx-64, camy-64, 8, 2)
+ spe_print('#enenmies:'..#enemies,camx+ 0, camy, 8, 2)
+ spe_print('time:'..flr(time()/2),camx-64, camy-64, 8, 2)
  spe_print('e:'..spawner.alivee,camx-30, 30 +camy, 8, 2)
  
- -- spe_print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
+ spe_print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
  spe_print('all_cpu:'..stat(1),camx+ 0, 40+camy, 9, 4)
  spe_print('particles:'..#part,camx+ 0, 50+camy, 8, 2)
  -- spe_print('sys_cpu:'..stat(2),camx+ 0, 50+camy, 8, 2)
@@ -151,14 +151,19 @@ end
 
 function draw_game()
  cls(15)
-
  draw_part()
  draw_all_gameobjects()
  
  map(2, 0, -48+shkx, -55+shky, 33, 38)
+ print_wave_number()
 
  whiteframe_update()
 
+end
+
+function print_wave_number()
+   local x, y = camx-12, camy-60
+   spe_print('wave '..flr(time()/20)+1, x, y, 9,4)
 end
 
 function camera_update()
@@ -275,14 +280,14 @@ end
 function random_enemy_spawning()
 
  if spawner.timer <= time() and spawner.alivee < spawner_infos.properties.enemy_limit then
-  sfx(11)
+  -- sfx(11)
   if spawner.time_between_spawn > 1 then spawner.time_between_spawn *= 0.98 end
 
   spawner.timer = time() + spawner.time_between_spawn
 
 
-  local rand, randmax= 0, 3
-  if time() > 15 then randmax = 4 else randmax = 3 end
+  
+  -- if time() > 15 then randmax = 4 else randmax = 3 end
    
   spawn_enemy()
 
@@ -290,17 +295,18 @@ function random_enemy_spawning()
 end
 
 function spawn_enemy()
-   rand=flr(rnd(randmax))
+   local randmax = 4
+   local rand_e = flr(rnd(randmax))
    local rand_pos_y = flr(rnd(3))
    local top_y_pos = 7
    local bot_y_pos = 140
 
    if rand_pos_y <= 1 then rand_pos_y = top_y_pos else rand_pos_y = bot_y_pos end
-   if rand <= 1 then 
+   if rand_e <= 1 then 
     make_enemy(rnd(4)+67, rand_pos_y, flr(rnd(2))+(time()/10) + 2, rnd(40)+5, 17, {18, 19},'melee')
-   elseif rand <= 2 then
+   elseif rand_e <= 2 then
     make_enemy(rnd(4)+67, rand_pos_y, flr(rnd(7))+(time()/8) + 2, rnd(50)+10, 33, {34, 35},'melee')
-   elseif rand <= 3 then
+   elseif rand_e <= 3 then
     make_enemy(rnd(4)+67, rand_pos_y, flr(rnd(15))+(time()/6) + 3, rnd(20)+10, 33, {50, 51},'mage')
  -- make_enemy(x, y, health, move_speed, idle_spr, walk_spr)
    end
@@ -586,18 +592,15 @@ function make_player()
    if btn(0) or btn(1) or btn(2) or btn(3) then self.moving = true return true
    else self.moving = false return false end
   end,
-  -- is_key_pressed=function(self, _key)
-  --  self.press_once +=1
-  --  if not btn(_key) then self.press_once = 0 end 
-  --  if self.press_once <= 2 and self.press_once > 0 then return true else return false end
-   
-  -- end,
+
   display_score=function(self)
    -- sspr(112, 16, 16, 16, 70, 70)
-   
-   rectfill(45,71, 129, 82, 2)
-   rectfill(46,72, 128, 81, 4)
-   spe_print('score '..flr(self.score), 68, 74, 9,4, 1, 2, 'score')
+   local r1_x0, r1_y0, r1_x1, r1_y1, r1_col1, r1_col2 = 5,71, 151, 82, 2
+   local r2_x0, r2_y0, r2_x1, r2_y1, r2_col1, r2_col2 = 5,72, 151, 81, 4
+
+   rectfill(r1_x0, r1_y0, r1_x1, r1_y1, r1_col1, r1_col2)
+   rectfill(r2_x0, r2_y0, r2_x1, r2_y1, r2_col1, r2_col2)
+   spe_print('score '..flr(self.score), 68, 74, 9, 4, false)
   end,
   move_input=function(self)
    if(self.rolling.state == true) then 
@@ -651,7 +654,6 @@ function make_player()
   end,
   make_blinking=function(self)
    -- make blinking
-   if self.invicible.state then
     draw_outline_spr(self.current_spr, self.x+shkx, self.y+shky)
     if time()*6%2 >= 1 then
      pal(9, 15) 
@@ -661,6 +663,10 @@ function make_player()
     end
     spr(self.current_spr,self.x+shkx, self.y+shky) 
     pal()
+  end,
+  draw_player=function(self)
+   if self.invicible.state then
+    self:make_blinking()
    else
     pal()
     draw_outline_spr(self.current_spr, self.x+shkx, self.y+shky)
@@ -692,10 +698,10 @@ function make_player()
 
    if self.moving then smoke_part_custom(self:center('x'),self:center('y')+6, rnd(2)+3, rnd(25)+10, 0.125,{9, 4}) end
    self:draw_weapon_range(self.inventory.gun.timer, self.inventory.gun.range)
-   self:draw_weapon_range(self.inventory.superbow.timer, self.inventory.superbow.range, 10, 9)
+   self:draw_weapon_range(self.inventory.superbow.timer, self.inventory.superbow.range)
 
 
-   self:make_blinking()
+   self:draw_player()
 
    spe_print('hp '..self.health, self.x+shkx, self.y+10+shky, 9,2)
 
@@ -718,22 +724,22 @@ function make_turret(x, y, tag, duration, range, attack_speed, sprite, sound, bu
   -- damage, move_speed, bullet_sprite, attack_timer, backoff, 
   bullet_infos=bullet_infos,
   attack_update=function(self)
-   if self.bullet_infos.attack_timer <= time()  then
-   sfx(sound)
-   local target = closest_obj(self, 'enemy')
-   if target ==nil then return end
-      if target:get_tag()== 'enemy' and target:is_active() 
-      and fast_distance(self, target) <= self.range^2 then
-       -- shake_camera(2)
-       local new_bullet = make_bullet(self:center('x'), self:center('y'), self.bullet_infos.damage,
-        self.bullet_infos.backoff, true, self.bullet_infos.bullet_speed,
-        41, target, 'turretbullet', true) 
-       if new_bullet != nil then  
-        new_bullet:set_target(target)       
-       end
-      end     
-     self.bullet_infos.attack_timer = time() + self.attack_speed
-   end
+   if self.bullet_infos.attack_timer <= time() then
+    sfx(sound)
+    local target = closest_obj(self, 'enemy')
+    if target ==nil then return end
+       if target:get_tag()== 'enemy' and target:is_active() 
+       and fast_distance(self, target) <= self.range^2 then
+        -- shake_camera(2)
+        local new_bullet = make_bullet(self:center('x'), self:center('y'), self.bullet_infos.damage,
+         self.bullet_infos.backoff, true, self.bullet_infos.bullet_speed,
+         41, target, 'turretbullet', true) 
+        if new_bullet != nil then  
+         new_bullet:set_target(target)       
+        end
+       end     
+      self.bullet_infos.attack_timer = time() + self.attack_speed
+    end
    end,
    reset=function(self)
     self.active = true
@@ -898,9 +904,8 @@ function camera_follow()
  camera(cam.x-64 ,cam.y-64)
 end
 
--- ##enemy
+-- ##enemy 
 function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
-
  
  spawner.alivee += 1
 
@@ -1090,13 +1095,13 @@ end
 -- ##make gameobject
 function make_game_object(x, y, tag, properties)
  
- for obj in all(game_objects) do
-  if(obj:is_active() == false and obj:get_tag() == tag) then
-   obj:set_value(x,y,tag)
-   obj:reset()
-   return obj
-  end
- end
+ -- for obj in all(game_objects) do
+ --  if(obj:is_active() == false and obj:get_tag() == tag) then
+ --   obj:set_value(x,y,tag)
+ --   obj:reset()
+ --   return obj
+ --  end
+ -- end
 
  local obj={
   x=x,
@@ -1114,6 +1119,8 @@ function make_game_object(x, y, tag, properties)
   end,
   disable=function(self)
    self.active = false
+   del(game_objects, self)
+   del(enemies, self)
    -- self.x, self.y = 150, 150
   end,
   enable=function(self)
@@ -1144,22 +1151,20 @@ function make_game_object(x, y, tag, properties)
   end
  end
 
- -- if(get_pool_object(tag)==nil) then
-  add(game_objects, obj)
-  if obj:get_tag() == 'enemy' then add(enemies, obj) end
- -- end
-
+ add(game_objects, obj)
+ if obj:get_tag() == 'enemy' then add(enemies, obj) end
  return obj
 
 end
 
-function get_pool_object(tag)
- for obj in all(game_objects) do
-  if(obj:is_active() == false and obj:get_tag() == tag) then
-   return obj
-  end
- end
-end
+-- pico 8 garbage collector seems to do so good that object pooling is pointless. 
+-- function get_pool_object(tag)
+--  for obj in all(game_objects) do
+--   if(obj:is_active() == false and obj:get_tag() == tag) then
+--    return obj
+--   end
+--  end
+-- end
 
 function move_toward(current, target, move_speed)
  if(move_speed == 0) then move_speed = 1 end
@@ -1334,9 +1339,9 @@ function blood_part(x, y, quantity, colarr)
  end
 end
 
-function draw_outline_spr(n, x, y)
+function draw_outline_spr(n, x, y, p_outline_col)
 
- local outline_col = 2
+ local outline_col = p_outline_col or 2
  for i=0, 15 do
   pal(i, outline_col)
  end
@@ -1353,7 +1358,7 @@ function draw_outline_spr(n, x, y)
 end
 
 -- ##spe_print
-function spe_print(text, x, y, in_col, out_col, ui_state)
+function spe_print(text, x, y, in_col, out_col, ui_state, disable_outline)
  if(text == nil or text =='') then return end
  if ui_state == false then
   if(x <= 8) then x = 9 elseif x >=140 then x=140 end
@@ -1365,20 +1370,23 @@ function spe_print(text, x, y, in_col, out_col, ui_state)
  end
 
  local outlinecol = 2
- -- black outline
- print(text, x-1+shkx, y+shky, outlinecol)
- print(text, x+1+shkx, y+shky, outlinecol)
- print(text, x+1+shkx, y-1+shky, outlinecol)
- print(text, x-1+shkx, y-1+shky, outlinecol)
- print(text, x+shkx, y-1+shky, outlinecol)
- print(text, x+1+shkx, y+1+shky, outlinecol)
- print(text, x-1+shkx, y+1+shky, outlinecol)
- print(text, x+1+shkx, y+2+shky, outlinecol)
- print(text, x-1+shkx, y+2+shky, outlinecol)
- print(text, x+shkx, y+2+shky, outlinecol)
- -- in and out color text.
- print(text, x+shkx, y+1+shky, out_col)
- print(text, x+shkx, y+shky, in_col)
+ if not disable_outline then
+   -- black outline
+   print(text, x-1+shkx, y+shky, outlinecol)
+   print(text, x+1+shkx, y+shky, outlinecol)
+   print(text, x+1+shkx, y-1+shky, outlinecol)
+   print(text, x-1+shkx, y-1+shky, outlinecol)
+   print(text, x+shkx, y-1+shky, outlinecol)
+   print(text, x+1+shkx, y+1+shky, outlinecol)
+   print(text, x-1+shkx, y+1+shky, outlinecol)
+   print(text, x+1+shkx, y+2+shky, outlinecol)
+   print(text, x-1+shkx, y+2+shky, outlinecol)
+   print(text, x+shkx, y+2+shky, outlinecol)
+  end
+
+  -- in and out color text.
+  print(text, x+shkx, y+1+shky, out_col)
+  print(text, x+shkx, y+shky, in_col)
 end
 
 function search_gameobject(tag)
@@ -1470,27 +1478,27 @@ __gfx__
 00099000000440000004400000044000000000000009900099000099000000000000000000000000000000000000000099ffff92999999990000000000000000
 00099000004994000049940000499400000000000044440094444449000000000099990000000400000002000000000099ffff99999992990000000000000000
 00099000004444000044440000444400000000000444444004444440000000000090090000000420000002900000000092ffff99999999990000000000000000
-00099000000990000004400000044000000000009444444904422440aaaaaaa000000900224444209922229000000000999ff999999999990000000000000000
-000990000009900004499440044994400000000094444449044224404aaaaa400009990022444422992222990000000099999999992999920000000000000000
-09999990049999404094400000044004002222000444444004444440049a94000000000022444420992222900000000022999929999999220000000000000000
-00999900400990040090090000000900022222200044440094444449004940000009000000000420000002900000000022229999999922220000000000000000
-00099000004004000000090000900000002222000009900099000099000400000000000000000400000002000000000022222444444222220000000000000000
+000990000009900000044000000440000000000094444449044224409999999000000900224444209922229000000000999ff999999999990000000000000000
+00099000000990000449944004499440000000009444444904422440499999400009990022444422992222990000000099999999992999920000000000000000
+09999990049999404004400000044004022222200444444004444440049994000000000022444420992222900000000022999929999999220000000000000000
+00999900400990040090000000000900222222220044440094444449004940000009000000000420000002900000000022229999999922220000000000000000
+00099000004004000000090000900000022222200009900099000099000400000000000000000400000002000000000022222444444222220000000000000000
 00099000000440000004400000044000000000000000000000000000000000000000000000000000000200000004420200000000000000009000000000000000
 00999900004224000049240000492400000000002200000000999990099000000990092000000000022222000000442000000099990000009990000000000099
 099999900044440000444400004444000000000002220900009244900099900009999920004224004444444000044442000999ff999900009949900000009990
 0009900000022000000440000004400000000000920029900094449002900940099992200029920000444000004444420099fffffff999000944499999994900
 000990000002200004422440044224400000000099999999999244900244444409999220002992000044400004444404999ffffffffff9900944444444444900
-0009900004222240409440000004400400222200920029909444449002900940009922000042240000444000244440009fffffffffffff990094444444444900
-0009900040022004009009000000090002222220022209009444449000999000000220000000000000222000224400009ffffffff99999f90094444444449000
-0009900000400400000009000090000000222200220000009999999009900000000000000000000000222000022000009ffffff9999999990094444444449000
-00000000000220000002200000022000444224444442244400000000000000000000000000090000000229090000000099ffff99999999990094444444449000
-0000000000944900009449000094490004222240042222400000000000ffff000000000009999900000022900000000000000000000000000094444444449000
-000000000044440000444400004444000492294004922940009222000f9229f00049940022222220000222290000000000000000000000000094444444449000
-000000000099990000999904409999000022220220222200022292200f2992f00099990000222000002222290000000000000000000000000094444444449000
-000000000444444004444400004444400222220000222220029222900f2992f00099990000222000022222020000000000000000000000000094444444449900
-000000000009900000099000000990000002200000022000022292200f9229f00049940000222000922220000000000000000000000000000094499999944490
-0000000000099000040990000009904002022000000220200004400000ffff000000000000999000992200000000000000000000000000000944990000099490
-00000000004004000000040000400000000002000020000000044000000000000000000000999000099000000000000000000000000000000999000000000999
+0009900004222240400440000004400400222200920029909444449002900940009922000042240000444000244440009fffffffffffff990094444444444900
+0009900040022004002000000000090002222220022209009444449000999000000220000000000000222000224400009ffffffff99999f90094444444449000
+0009900000400400000002000090000000222200220000009999999009900000000000000000000000222000022000009ffffff9999999990094444444449000
+00000000000220000002200000022000444224444442244400000000002222000000000000090000000229090000000099ffff99999999990094444444449000
+0000000000944900009449000094490004222240042222400000000002ffff200000000009999900000022900000000000000000000000000094444444449000
+000000000044440000444400004444000492294004922940009222002f9229f20049940022222220000222290000000000000000000000000094444444449000
+000000000099990000999904409999000022220220222200022292202f2992f20099990000222000002222290000000000000000000000000094444444449000
+000000000444444004444400004444400222220000222220029222902f2992f20099990000222000022222020000000000000000000000000094444444449900
+000000000009900000099000000990000002200000022000022292202f9229f20049940000222000922220000000000000000000000000000094499999944490
+0000000000099000090990000009902002022000000220200004400002ffff200000000000999000992200000000000000000000000000000944990000099490
+00000000004004000000090000200000000002000020000000044000002222000000000000999000099000000000000000000000000000000999000000000999
 000000004999999422222222f22224244242222f222222220000000049999444444999940000000094f2f2499999999999999999000000000000000000000000
 0000000049999994999242f22ff2442442442ff22f24299900000000929929444492992900000000942f2f499994444444444999000000000000000000000000
 9999999949999994992f242ff2f294f44f492f2ff242f2990000000099929944449992990000000094f2f249994ffffffffff499000000000000000000000000
