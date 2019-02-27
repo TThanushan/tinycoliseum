@@ -29,11 +29,11 @@ local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=
    'aaargh !','huh !', randtext=flr(rnd(3))}}
 
 local spawner = nil
-local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=0.25, alivee=0, enemy_limit = 800}}
+local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=0.15, alivee=0, enemy_limit = 800}}
 local item_spawnerinfos = {x=0, y=0, tag='item_spawner', properties={timer=0, time_between_spawn=3}}
 local playerinfos = {health=3000, move_speed=1}
 local debugmode = true
-
+local game_objects_count = {units=0, messages=0, particles=0}
 
 
 -- ##init
@@ -68,10 +68,12 @@ if (debugmode) then
  
  -- spe_print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
  spe_print('all_cpu:'..stat(1),camx+ 0, 40+camy, 9, 4)
+ spe_print('particles:'..#part,camx+ 0, 50+camy, 8, 2)
  -- spe_print('sys_cpu:'..stat(2),camx+ 0, 50+camy, 8, 2)
 
  -- spe_print(camx, camx, camy, 8, 2)
  -- spe_print(camy, camx, camy, 8, 2)
+ 
  end
 end
 
@@ -90,11 +92,11 @@ end
 
 -- ##update
 function _update60()
+ 
  if mode == 'start' then
   update_start()
  elseif mode == 'game' then
   update_game()
-
  elseif mode == 'gameover' then
   update_gameover()
  end
@@ -148,11 +150,7 @@ function whiteframe_update()
 end
 
 function draw_game()
- if not stop_cls() then
-  cls(15)
- end
-
-
+ cls(15)
 
  draw_part()
  draw_all_gameobjects()
@@ -260,7 +258,7 @@ end
 
 
 function draw_map()
- for i=5, 30 do
+ for i=5, 10 do
   local x, y = rnd(140)+8,rnd(140)+8
   add_decors(7+flr(rnd(5)),x, y) 
  end
@@ -423,13 +421,13 @@ function make_player()
   anim_timer=0,
   walk_spr={2,3},
   inventory = {pickup_range=100, mushroom={timer=0, duration=2}, speedboot={timer=0, duration =4, speed = 1.5}, 
-  superbow={timer=0, duration=10, damage=4, attack_speed=1, bullet_speed=230, attack_timer=0, range=65, bullet_sprite=56, backoff=500},
-  gun={active=false, duration=15, timer=0, backoff=150, move_speed=350,
-   sprite=41, attack_speed=1,  first_attack_speed= 1, attack_timer=0, range=50, damage=4}},
+  	superbow={timer=0, duration=10, damage=4, attack_speed=1, bullet_speed=230, attack_timer=0, range=65, bullet_sprite=56, backoff=500},
+  	gun={active=false, duration=15, timer=0, backoff=150, move_speed=350, sprite=41, attack_speed=1,  first_attack_speed= 1,
+  	attack_timer=0, range=50, damage=4}},
   health=playerinfos.health,
   target,
   moving=false,
-  press_once=0,
+  -- press_once=0,
   score=0,
   stopped=false,
   invicible={state=false, timer=0, duration = 3, blink_speed=4},
@@ -588,12 +586,12 @@ function make_player()
    if btn(0) or btn(1) or btn(2) or btn(3) then self.moving = true return true
    else self.moving = false return false end
   end,
-  is_key_pressed=function(self, _key)
-   self.press_once +=1
-   if not btn(_key) then self.press_once = 0 end 
-   if self.press_once <= 2 and self.press_once > 0 then return true else return false end
+  -- is_key_pressed=function(self, _key)
+  --  self.press_once +=1
+  --  if not btn(_key) then self.press_once = 0 end 
+  --  if self.press_once <= 2 and self.press_once > 0 then return true else return false end
    
-  end,
+  -- end,
   display_score=function(self)
    -- sspr(112, 16, 16, 16, 70, 70)
    
@@ -803,7 +801,7 @@ function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, 
    if self.target:is_active() == false then self:disable() end
    -- self.move_speed *= 0.98
    if(follow) then self:move_follow() else self:move_straight() end
-   if(fast_distance(self, self.target) <= self.hit_range and self.target:is_active() == true and self.target:is_alive()) then
+   if(fast_distance(self, self.target) <= self.hit_range) then
     -- backoff the target
     self.target:take_damage(damage)
 
@@ -818,7 +816,7 @@ function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, 
   end,
   explode=function(self)
     smoke_part_custom(self:center('x'),self:center(' y'), rnd(10)+5, rnd(100)+100, 0.5,{9, 4}) -- orange and brown circle.
-    smoke_part_custom(self:center('x'),self:center('y'), rnd(15)+9, 20, 3,{2, 9, 15}) -- purple circle
+    -- smoke_part_custom(self:center('x'),self:center('y'), rnd(15)+9, 20, 3,{2, 9, 15}) -- purple circle
      if self.target:get_tag()!='player' then sfx(1) end
   end,
   set_target=function(self, target)
@@ -1207,15 +1205,14 @@ end
 
 -- ##particles
 function add_part(x, y ,tpe, size, mage, dx, dy, colarr)
-
- for obj in all(game_objects) do
-  if(obj:is_active() == false and obj:get_tag() == tag) then
-   obj:set_value(x,y,tag)
-   obj:reset()
-   return obj
-  end
- end
-
+ 
+ -- for obj in all(game_objects) do
+ --  if(obj:is_active() == false and obj:get_tag() == tag) then
+ --   obj:set_value(x,y,tag)
+ --   obj:reset()
+ --   return obj
+ --  end
+ -- end
 
  local p = {
   x=x,
@@ -1230,7 +1227,6 @@ function add_part(x, y ,tpe, size, mage, dx, dy, colarr)
   col=col,
   colarr=colarr,
   active=true
-
  }
 
  add(part, p)
@@ -1238,11 +1234,13 @@ function add_part(x, y ,tpe, size, mage, dx, dy, colarr)
 end
 
 local del_func = del
+
 function update_part()
  for p in all(part) do
   p.age+=1
   if p.mage != 0 and p.age >= p.mage or p.size <= 0 then
    del_func(part, p)
+
   end
   
   -- if p.colarr == nil then return end
@@ -1268,7 +1266,9 @@ function add_decors(n,x,y)
 end
 
 local circfill_func = circfill
+
 function draw_part()
+ 
  for p in all(part) do
   if p.tpe==0 then
    pset(p.x+shkx, p.y+shky, p.col)
@@ -1304,6 +1304,7 @@ function draw_part()
 end
 
 function smoke_part(x, y)
+
  for i=0, 10 do
   local p = add_part(x, y, 9, 10, rnd(10)+100, (rnd(30)-rnd(30))/100, (rnd(30)-rnd(30))/100,{6, 5, 0})
   p.size=rnd(2)+2
@@ -1312,12 +1313,14 @@ function smoke_part(x, y)
 end
 
 function smoke_part_custom(x, y, size, mage, speed, colarr)
+
   local move_speed = speed
     local p = add_part(x+rnd(4)-rnd(4), y+rnd(4)-rnd(4), 3, size, mage, rnd(move_speed)-rnd(move_speed),rnd(move_speed)-rnd(move_speed),colarr)
     p.speed = move_speed
 end
 
 function dust_part(x, y, size, mage, speed, move_speed, colarr)
+
  local p = add_part(x+rnd(2)-rnd(2), y+rnd(2)-rnd(2), 3, size, mage, rnd(move_speed)-rnd(move_speed),rnd(move_speed)-rnd(move_speed),colarr)
  p.speed = speed
  p.move_speed = move_speed
@@ -1325,13 +1328,14 @@ end
 
 function blood_part(x, y, quantity, colarr)
  for i=0, quantity do
-  add_part(rnd(5)-rnd(5)+x, rnd(5)-rnd(5)+y, 5, rnd(3)+1, 500, 0, 0,colarr)
+  add_part(rnd(5)-rnd(5)+x, rnd(5)-rnd(5)+y, 5, rnd(3)+1, 50, 0, 0,colarr)
   -- add_part(x, y ,tpe, size, mage, dx, dy, colarr)
 
  end
 end
 
 function draw_outline_spr(n, x, y)
+
  local outline_col = 2
  for i=0, 15 do
   pal(i, outline_col)
