@@ -30,7 +30,8 @@ local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=
 
 local spawner = nil
 local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=2, alivee=0, enemy_limit = 80}}
-local item_spawnerinfos = {x=0, y=0, tag='item_spawner', properties={timer=0, time_between_spawn=3}}
+local item_spawnerinfos = {x=0, y=0, tag='spawner_item', properties={timer=0, time_between_spawn=3}}
+local item_spawner
 local playerinfos = {health=300, move_speed=1}
 local debugmode = false
 local game_objects_count = {units=0, messages=0, particles=0}
@@ -250,7 +251,7 @@ function init_all_gameobject()
 
  cam = make_game_object(64, 64, 'camera', {newposition = {x=0, y=0}})
 
- make_game_object(item_spawnerinfos.x , item_spawnerinfos.y, item_spawnerinfos.tag, {timer=item_spawnerinfos.properties.timer, time_between_spawn=item_spawnerinfos.properties.time_between_spawn})
+ item_spawner = make_game_object(item_spawnerinfos.x , item_spawnerinfos.y, item_spawnerinfos.tag, {timer=item_spawnerinfos.properties.timer, time_between_spawn=item_spawnerinfos.properties.time_between_spawn})
 
 
 end
@@ -315,8 +316,7 @@ end
 
 -- ##item 
 function random_item_spawning()
- local item_spawner = search_gameobject('item_spawner')
- if(item_spawner == nil) then stop() end
+ if(item_spawner == nil) then return end
 
  if item_spawner.timer <= time() then
   item_spawner.timer = time() + item_spawner.time_between_spawn
@@ -418,10 +418,10 @@ function make_player()
   anim_index=0,
   anim_timer=0,
   walk_spr={2,3},
-  inventory = {pickup_range=100, mushroom={timer=0, duration=2}, speedboot={timer=0, duration =4, speed = 1.5}, 
-  	superbow={timer=0, duration=10, damage=4, attack_speed=1, bullet_speed=230, attack_timer=0, range=65, bullet_sprite=56, backoff=500},
-  	gun={active=false, duration=15, timer=0, backoff=300, move_speed=350, sprite=41, attack_speed=2,  first_attack_speed= 2, attack_speed_growth=0.995,
-  	attack_timer=0, range=50, damage=6}},
+  inventory = {pickup_range=100, mushroom={timer=0, duration=2}, speedboot={timer=0, duration =8, speed = 2.5}, 
+    superbow={timer=0, duration=10, damage=4, attack_speed=1, bullet_speed=230, attack_timer=0, range=65, bullet_sprite=56, backoff=500},
+    gun={active=false, duration=15, timer=0, backoff=300, move_speed=350, sprite=41, attack_speed=2,  first_attack_speed= 2, attack_speed_growth=0.995,
+    attack_timer=0, range=50, damage=6}},
   health=playerinfos.health,
   target,
   moving=false,
@@ -470,49 +470,49 @@ function make_player()
 
   end,
   take_item=function(self)
-	for obj in all(game_objects) do
-		local tag = obj:get_tag()
-		if obj:is_active() and fast_distance(self, obj) < self.inventory.pickup_range then
-		-- make_item(x, y, 300,'item_heart', {54, 55})
-		if sub(tag, 6,12) == 'heart' then  sfx(8)
+    for obj in all(game_objects) do
+        local tag = obj:get_tag()
+        if sub(tag, 1, 4) == 'item' and obj:is_active() and fast_distance(self, obj) < self.inventory.pickup_range then
+            
+            if sub(tag, 6,12) == 'heart' then  sfx(8)
+                if self.health <= 7 then 
+                    show_message('potion', self.x, self.y, 8, 2, 10, 2, 'msg_item', true)
+                    self.health += 3
+                else
+                    show_message('max health', self.x, self.y, 8, 2, 10, 2, 'msg_item', true)
 
-		if self.health <= 7 then 
-		show_message('potion', self.x, self.y, 8, 2, 10, 2, 'item_msg', true)
-		self.health += 3
-		else
-		show_message('max health', self.x, self.y, 8, 2, 10, 2, 'item_msg', true)
-		end
-		elseif sub(tag, 6,14) =='gun' then sfx(8)
-		self.inventory.gun.active = true self.inventory.gun.timer = time() + self.inventory.gun.duration
-		show_message('bow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
 
-		elseif sub(tag, 6,22) =='speedboot' then sfx(8)
-		self.move_speed = self.inventory.speedboot.speed
-		self.inventory.speedboot.timer = time() + self.inventory.speedboot.duration 
-		show_message('speedboot', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+                end
+            elseif sub(tag, 6,14) =='gun' then sfx(8)
+                self.inventory.gun.active = true self.inventory.gun.timer = time() + self.inventory.gun.duration
+                show_message('bow', self.x, self.y, 12, 2, 10, 5, 'msg_item', true) 
+                obj:disable()
+            elseif sub(tag, 6,22) =='speedboot' then sfx(8)
+                self.move_speed = self.inventory.speedboot.speed
+                self.inventory.speedboot.timer = time() + self.inventory.speedboot.duration 
+                show_message('speedboot', self.x, self.y, 12, 2, 10, 1, 'msg_item', true) 
 
-		elseif sub(tag, 6,22) =='superbow' then sfx(8)
-		self.inventory.superbow.timer = time() + self.inventory.superbow.duration 
-		show_message('superbow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+            elseif sub(tag, 6,22) =='superbow' then sfx(8)
+                self.inventory.superbow.timer = time() + self.inventory.superbow.duration 
+                show_message('superbow', self.x, self.y, 12, 2, 10, 1, 'msg_item', true) 
 
-		elseif sub(tag, 6,22) =='mushroom' then sfx(8)
-		self.inventory.mushroom.timer = time() + self.inventory.mushroom.duration
-		show_message('toxic mushroom', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+            elseif sub(tag, 6,22) =='mushroom' then sfx(8)
+                self.inventory.mushroom.timer = time() + self.inventory.mushroom.duration
+                show_message('toxic mushroom', self.x, self.y, 12, 2, 10, 1, 'msg_item', true) 
 
-		elseif sub(tag, 6,22) =='turret' then sfx(8)
-		show_message('turret', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
-		local turret = make_turret(self.x, self.y, 'turret', 15, 55, 0.5, 21, 0, 
-		{damage=4*(time()/6), bullet_speed=400,  backoff=300, attack_timer=0, bullet_sprite=41})
+            elseif sub(tag, 6,22) =='turret' then sfx(8)
+                show_message('turret', self.x, self.y, 12, 2, 10, 1, 'msg_item', true) 
+                local turret = make_turret(self.x, self.y, 'turret', 15, 55, 0.5, 21, 0, 
+                {damage=4*(time()/6), bullet_speed=400,  backoff=300, attack_timer=0, bullet_sprite=41})
 
-		elseif sub(tag, 6,22) =='star' then sfx(16)
-		self.invicible.timer = time() + 20
-		self.invicible.state = true
-		show_message('invincibility !', self.x, self.y, 12, 2, 10, 5, 'item_msg', true) 
-		end
-		end
-		-- !!!!!!!!!!!!!!!!!!!!!!!!!!! todo !!!!!!!!!!!!!!!!!!!!!!!!!!!
-		-- obj:disable()
-	end
+            elseif sub(tag, 6,22) =='star' then sfx(16)
+                self.invicible.timer = time() + 20
+                self.invicible.state = true
+                show_message('invincibility !', self.x, self.y, 12, 2, 10, 5, 'msg_item', true) 
+            end
+            obj:disable()
+        end
+    end
   end,
   is_alive=function(self)
    if self.health <= 0 then
@@ -526,48 +526,48 @@ function make_player()
    return true
   end,
   speedboot_update=function(self)
-	if self.inventory.speedboot.timer <= time() then self.move_speed = playerinfos.move_speed end
+    if self.inventory.speedboot.timer <= time() then self.move_speed = playerinfos.move_speed end
   end,
   superbow_update=function(self)
-	if self.inventory.superbow.timer > time() and self.inventory.superbow.attack_timer <= time()  then
-		for obj in all(game_objects) do
-			if obj:get_tag()== 'enemy' and obj:is_active() 
-			and fast_distance(self, obj) <= self.inventory.superbow.range^2 then
-				-- shake_camera(1)
-				local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.superbow.damage,
-				self.inventory.superbow.backoff, true, self.inventory.superbow.bullet_speed,
-				self.inventory.superbow.bullet_sprite, obj, 'superbullet', true) 
+    if self.inventory.superbow.timer > time() and self.inventory.superbow.attack_timer <= time()  then
+        for obj in all(game_objects) do
+            if obj:get_tag()== 'enemy' and obj:is_active() 
+            and fast_distance(self, obj) <= self.inventory.superbow.range^2 then
+                -- shake_camera(1)
+                local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.superbow.damage,
+                self.inventory.superbow.backoff, true, self.inventory.superbow.bullet_speed,
+                self.inventory.superbow.bullet_sprite, obj, 'superbullet', true) 
 
-				if new_bullet != nil then  
-					new_bullet:set_target(obj)       
-				end
+                if new_bullet != nil then  
+                    new_bullet:set_target(obj)       
+                end
 
-			end     
-		end
-		self.inventory.superbow.attack_timer = time() + self.inventory.superbow.attack_speed
+            end     
+        end
+        self.inventory.superbow.attack_timer = time() + self.inventory.superbow.attack_speed
    end
 
   end,
   gun_update=function(self)
-	if self.inventory.gun.active == true then
-		if(self.target != nil and self.target:is_active() == true and fast_distance(self, self.target) <= self.inventory.gun.range^2) then
-			if self.inventory.gun.attack_speed > self.inventory.gun.attack_speed/2 then self.inventory.gun.attack_speed *= self.inventory.gun.attack_speed_growth end 
-			if self.inventory.gun.attack_timer <= time() then 
-				self.inventory.gun.attack_timer = time() + self.inventory.gun.attack_speed
+    if self.inventory.gun.active == true then
+        if(self.target != nil and self.target:is_active() == true and fast_distance(self, self.target) <= self.inventory.gun.range^2) then
+            if self.inventory.gun.attack_speed > self.inventory.gun.attack_speed/2 then self.inventory.gun.attack_speed *= self.inventory.gun.attack_speed_growth end 
+            if self.inventory.gun.attack_timer <= time() then 
+                self.inventory.gun.attack_timer = time() + self.inventory.gun.attack_speed
 
-				-- shake_camera(1)
-				local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.gun.damage,self.inventory.gun.backoff, true, 
-				self.inventory.gun.move_speed,self.inventory.gun.sprite, self.target, 'bullet', true) 
-				if new_bullet != nil then  
-					new_bullet:set_target(self.target)
-				end
-			end
-		end
-	else
-		self.inventory.gun.attack_speed=self.inventory.gun.first_attack_speed
-	end
+                -- shake_camera(1)
+                local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.gun.damage,self.inventory.gun.backoff, true, 
+                self.inventory.gun.move_speed,self.inventory.gun.sprite, self.target, 'bullet', true) 
+                if new_bullet != nil then  
+                    new_bullet:set_target(self.target)
+                end
+            end
+        end
+    else
+        self.inventory.gun.attack_speed=self.inventory.gun.first_attack_speed
+    end
 
-	if self.inventory.gun.timer <= time() then self.inventory.gun.active = false end
+    if self.inventory.gun.timer <= time() then self.inventory.gun.active = false end
 
   end,
   item_manager=function(self)
@@ -575,7 +575,7 @@ function make_player()
    
    self:speedboot_update()
    self:superbow_update()
-   self:gun_update()	
+   self:gun_update()    
    
   end,
   update_invicible=function(self)
@@ -684,7 +684,10 @@ function make_player()
      draw_circle(self:center('x'), self:center('y'), col1, col2, range) 
     end
   end,
-
+  draw_all_weapon_range=function(self)
+    self:draw_weapon_range(self.inventory.gun.timer, self.inventory.gun.range)
+    self:draw_weapon_range(self.inventory.superbow.timer, self.inventory.superbow.range)
+  end,
   update=function(self)
    -- if self.stopped then return end
    self:find_target()
@@ -696,14 +699,22 @@ function make_player()
    self:roll()
    self:is_moving()
   end,
+  create_walking_smoke=function(self)
+    local size, duration = 3, 10
+    
+    if self.move_speed != playerinfos.move_speed then
+        size, duration = 6, 30
+    end
+
+    if self.moving then
+        smoke_part_custom(self:center('x'),self:center('y')+6, rnd(size/2)+size, rnd(duration*2.5)+duration, 0.125,{9, 4}) 
+    end
+  end,
   draw=function(self)
    -- if self.stopped then return end
+   self:create_walking_smoke()
    self:display_score()
-
-   if self.moving then smoke_part_custom(self:center('x'),self:center('y')+6, rnd(2)+3, rnd(25)+10, 0.125,{9, 4}) end
-   self:draw_weapon_range(self.inventory.gun.timer, self.inventory.gun.range)
-   self:draw_weapon_range(self.inventory.superbow.timer, self.inventory.superbow.range)
-
+   self:draw_all_weapon_range()
 
    self:draw_player()
 
@@ -815,15 +826,15 @@ function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, 
    self:can_damage()
   end,
   can_damage=function(self)
-  	if(fast_distance(self, self.target) <= self.hit_range) then
-	    move_toward(self.target, self, -self.backoff)
-	    self.target:take_damage(damage)
+    if(fast_distance(self, self.target) <= self.hit_range) then
+        move_toward(self.target, self, -self.backoff)
+        self.target:take_damage(damage)
 
-	    -- smoke_part(self:center('x'),self:center('y'))   
-	    -- dust_part(x, y, size, mage, speed, move_speed, colarr)
-	    self:explode()
-	    self:disable()
-   	end
+        -- smoke_part(self:center('x'),self:center('y'))   
+        -- dust_part(x, y, size, mage, speed, move_speed, colarr)
+        self:explode()
+        self:disable()
+    end
   end,
   explode=function(self)
     smoke_part_custom(self:center('x'),self:center(' y'), rnd(10)+5, rnd(100)+100, 0.5,{9, 4}) -- orange and brown circle.
