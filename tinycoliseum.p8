@@ -29,7 +29,7 @@ local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=
    'aaargh !','huh !', randtext=flr(rnd(3))}}
 
 local spawner = nil
-local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=0.25, alivee=0, enemy_limit = 80}}
+local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=2, alivee=0, enemy_limit = 80}}
 local item_spawnerinfos = {x=0, y=0, tag='item_spawner', properties={timer=0, time_between_spawn=3}}
 local playerinfos = {health=300, move_speed=1}
 local debugmode = false
@@ -133,7 +133,7 @@ function draw_start()
 
  if time() < 0.1 then  draw_map() end
  -- spe_print("tiny coliseum", 35, 32, 9, 4)
- if time()*1%2 > 0.5 then spe_print('press ❎ to brawl ', 30, 60, 9, 4) end
+ if time()*1%2 > 0.5 then spe_print('press ❎ to start ', 30, 60, 9, 4) end
  spe_print("by wombart", 2, 120, 9, 4, true)
  -- draw_all_gameobjects()
  tuto()
@@ -143,7 +143,7 @@ end
 
 function whiteframe_update()
  if whiteframe == true then
-  rectfill(-100,-100, 200, 200,15)
+  rectfill(-100,-100, 200, 200, 15)
   whiteframe = false
 
  end
@@ -321,27 +321,25 @@ function random_item_spawning()
  if item_spawner.timer <= time() then
   item_spawner.timer = time() + item_spawner.time_between_spawn
 
-  local random= flr(rnd(12))
+  local random= flr(rnd(100))
   sfx(10)
 
   local x, y = rnd(120)+8, rnd(120)+8
 
   hit_part(x+4,y+4, {2})
 
-  local item_sprite = 40 
-
-  if random < 2 then
-   make_item(x, y, 250,'item_heart', {40})
-  elseif random < 4 then
-   make_item(x, y, 250,'item_gun', {39})
-  elseif random < 6 then
-   make_item(x, y, 250,'item_speedboot', {38})
-  elseif random < 8 then
-    make_item(x, y, 250,'item_superbow', {37})
-  elseif random < 10 then
-    make_item(x, y, 450,'item_turret', {22})
-  elseif random < 12 then
-    make_item(x, y, 450,'item_star', {6})
+  if random < 5 then
+   make_item(x, y, 250,'item_heart', 40)
+  elseif random < 45 then
+   make_item(x, y, 250,'item_gun', 39)
+  elseif random < 55 then
+   make_item(x, y, 250,'item_speedboot', 38)
+  elseif random < 70 then
+    make_item(x, y, 250,'item_superbow', 37)
+  elseif random < 95 then
+    make_item(x, y, 450,'item_turret', 22)
+  elseif random < 100 then
+    make_item(x, y, 450,'item_star', 6)
   end   
   -- if rnd(3) > 1 then make_item(rnd(120)+8, rnd(120)+8, 150,'item_gun', {24}) end
 
@@ -350,33 +348,27 @@ function random_item_spawning()
 end
 
 
-function make_item(x, y, mage,tag, spritearr)
+function make_item(x, y, mage,tag, sprite)
 
  make_game_object(x, y, tag, {
-  spritearr=spritearr,
+  sprite=sprite,
   spriteindex=1,
   current_spr=0,
   age=0,
   mage=mage,
   animtimer=0,
   animate=function(self)
-   if self.animtimer <= time() then 
-    self.spriteindex +=1 
-    self.animtimer = time()+0.125 
-   end
-   
-   if self.spriteindex > #self.spritearr then
-    self.spriteindex = 1 
-   end
 
-   draw_outline_spr(spritearr[self.spriteindex], self.x, self.y)
-   if time()*2%2 >= 1 then
+   draw_outline_spr(sprite, self.x, self.y)
+   local blinking_speed = 2
+   if (self.age > self.mage*0.80) blinking_speed = 6
+   if time()*blinking_speed%2 >= 1 then
     pal(2, 15)
     pal(4, 15)
     pal(9, 15)
    end
    
-   spr(spritearr[self.spriteindex], self.x, self.y)
+   spr(sprite, self.x, self.y)
    pal()
 
 
@@ -385,7 +377,7 @@ function make_item(x, y, mage,tag, spritearr)
    self.age += 1
    
    if self.mage > 0 and self.age >= self.mage then self:disable() end
-
+   if time()%1 > 0.5 then self.y += 0.2 else self.y -= 0.2 end
   end,
   reset=function(self)
    self.age = 0
@@ -428,8 +420,8 @@ function make_player()
   walk_spr={2,3},
   inventory = {pickup_range=100, mushroom={timer=0, duration=2}, speedboot={timer=0, duration =4, speed = 1.5}, 
   	superbow={timer=0, duration=10, damage=4, attack_speed=1, bullet_speed=230, attack_timer=0, range=65, bullet_sprite=56, backoff=500},
-  	gun={active=false, duration=15, timer=0, backoff=150, move_speed=350, sprite=41, attack_speed=1,  first_attack_speed= 1,
-  	attack_timer=0, range=50, damage=4}},
+  	gun={active=false, duration=15, timer=0, backoff=300, move_speed=350, sprite=41, attack_speed=2,  first_attack_speed= 2, attack_speed_growth=0.995,
+  	attack_timer=0, range=50, damage=6}},
   health=playerinfos.health,
   target,
   moving=false,
@@ -478,48 +470,49 @@ function make_player()
 
   end,
   take_item=function(self)
-   for obj in all(game_objects) do
-    local tag = obj:get_tag()
-    if obj:is_active() and fast_distance(self, obj) < self.inventory.pickup_range then
-     -- make_item(x, y, 300,'item_heart', {54, 55})
-     if sub(tag, 6,12) == 'heart' then  sfx(8)
-      obj:disable()  
-      if self.health <= 7 then 
-       show_message('potion', self.x, self.y, 8, 2, 10, 2, 'item_msg', true)
-       self.health += 3
-      else
-       show_message('max health', self.x, self.y, 8, 2, 10, 2, 'item_msg', true)
-     end
-     elseif sub(tag, 6,14) =='gun' then sfx(8)
-      self.inventory.gun.active = true self.inventory.gun.timer = time() + self.inventory.gun.duration
-      obj:disable() show_message('bow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+	for obj in all(game_objects) do
+		local tag = obj:get_tag()
+		if obj:is_active() and fast_distance(self, obj) < self.inventory.pickup_range then
+		-- make_item(x, y, 300,'item_heart', {54, 55})
+		if sub(tag, 6,12) == 'heart' then  sfx(8)
 
-     elseif sub(tag, 6,22) =='speedboot' then sfx(8)
-      self.move_speed = self.inventory.speedboot.speed
-      self.inventory.speedboot.timer = time() + self.inventory.speedboot.duration 
-      obj:disable()  show_message('speedboot', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+		if self.health <= 7 then 
+		show_message('potion', self.x, self.y, 8, 2, 10, 2, 'item_msg', true)
+		self.health += 3
+		else
+		show_message('max health', self.x, self.y, 8, 2, 10, 2, 'item_msg', true)
+		end
+		elseif sub(tag, 6,14) =='gun' then sfx(8)
+		self.inventory.gun.active = true self.inventory.gun.timer = time() + self.inventory.gun.duration
+		show_message('bow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
 
-     elseif sub(tag, 6,22) =='superbow' then sfx(8)
-      self.inventory.superbow.timer = time() + self.inventory.superbow.duration 
-      obj:disable()   show_message('superbow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+		elseif sub(tag, 6,22) =='speedboot' then sfx(8)
+		self.move_speed = self.inventory.speedboot.speed
+		self.inventory.speedboot.timer = time() + self.inventory.speedboot.duration 
+		show_message('speedboot', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
 
-     elseif sub(tag, 6,22) =='mushroom' then sfx(8)
-      self.inventory.mushroom.timer = time() + self.inventory.mushroom.duration
-      obj:disable()  show_message('toxic mushroom', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+		elseif sub(tag, 6,22) =='superbow' then sfx(8)
+		self.inventory.superbow.timer = time() + self.inventory.superbow.duration 
+		show_message('superbow', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
 
-     elseif sub(tag, 6,22) =='turret' then sfx(8)
-      obj:disable()  show_message('turret', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
-      local turret = make_turret(self.x, self.y, 'turret', 15, 55, 0.5, 21, 0, 
-     {damage=4*(time()/6), bullet_speed=400,  backoff=300, attack_timer=0, bullet_sprite=41})
+		elseif sub(tag, 6,22) =='mushroom' then sfx(8)
+		self.inventory.mushroom.timer = time() + self.inventory.mushroom.duration
+		show_message('toxic mushroom', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
 
-     elseif sub(tag, 6,22) =='star' then sfx(16)
-      self.invicible.timer = time() + 10
-      self.invicible.state = true
-      obj:disable()  show_message('invincibility !', self.x, self.y, 12, 2, 10, 5, 'item_msg', true) 
+		elseif sub(tag, 6,22) =='turret' then sfx(8)
+		show_message('turret', self.x, self.y, 12, 2, 10, 1, 'item_msg', true) 
+		local turret = make_turret(self.x, self.y, 'turret', 15, 55, 0.5, 21, 0, 
+		{damage=4*(time()/6), bullet_speed=400,  backoff=300, attack_timer=0, bullet_sprite=41})
 
-     end
-    end
-   end
+		elseif sub(tag, 6,22) =='star' then sfx(16)
+		self.invicible.timer = time() + 20
+		self.invicible.state = true
+		show_message('invincibility !', self.x, self.y, 12, 2, 10, 5, 'item_msg', true) 
+		end
+		end
+		-- !!!!!!!!!!!!!!!!!!!!!!!!!!! todo !!!!!!!!!!!!!!!!!!!!!!!!!!!
+		-- obj:disable()
+	end
   end,
   is_alive=function(self)
    if self.health <= 0 then
@@ -532,47 +525,58 @@ function make_player()
 
    return true
   end,
+  speedboot_update=function(self)
+	if self.inventory.speedboot.timer <= time() then self.move_speed = playerinfos.move_speed end
+  end,
+  superbow_update=function(self)
+	if self.inventory.superbow.timer > time() and self.inventory.superbow.attack_timer <= time()  then
+		for obj in all(game_objects) do
+			if obj:get_tag()== 'enemy' and obj:is_active() 
+			and fast_distance(self, obj) <= self.inventory.superbow.range^2 then
+				-- shake_camera(1)
+				local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.superbow.damage,
+				self.inventory.superbow.backoff, true, self.inventory.superbow.bullet_speed,
+				self.inventory.superbow.bullet_sprite, obj, 'superbullet', true) 
+
+				if new_bullet != nil then  
+					new_bullet:set_target(obj)       
+				end
+
+			end     
+		end
+		self.inventory.superbow.attack_timer = time() + self.inventory.superbow.attack_speed
+   end
+
+  end,
+  gun_update=function(self)
+	if self.inventory.gun.active == true then
+		if(self.target != nil and self.target:is_active() == true and fast_distance(self, self.target) <= self.inventory.gun.range^2) then
+			if self.inventory.gun.attack_speed > self.inventory.gun.attack_speed/2 then self.inventory.gun.attack_speed *= self.inventory.gun.attack_speed_growth end 
+			if self.inventory.gun.attack_timer <= time() then 
+				self.inventory.gun.attack_timer = time() + self.inventory.gun.attack_speed
+
+				-- shake_camera(1)
+				local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.gun.damage,self.inventory.gun.backoff, true, 
+				self.inventory.gun.move_speed,self.inventory.gun.sprite, self.target, 'bullet', true) 
+				if new_bullet != nil then  
+					new_bullet:set_target(self.target)
+				end
+			end
+		end
+	else
+		self.inventory.gun.attack_speed=self.inventory.gun.first_attack_speed
+	end
+
+	if self.inventory.gun.timer <= time() then self.inventory.gun.active = false end
+
+  end,
   item_manager=function(self)
 
-   if self.inventory.speedboot.timer <= time() then self.move_speed = playerinfos.move_speed end
-
-   if self.inventory.superbow.timer > time() and self.inventory.superbow.attack_timer <= time()  then
-    for obj in all(game_objects) do
-      if obj:get_tag()== 'enemy' and obj:is_active() 
-      and fast_distance(self, obj) <= self.inventory.superbow.range^2 then
-       -- shake_camera(1)
-       local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.superbow.damage,
-        self.inventory.superbow.backoff, true, self.inventory.superbow.bullet_speed,
-        self.inventory.superbow.bullet_sprite, obj, 'superbullet', true) 
-       
-       if new_bullet != nil then  
-        new_bullet:set_target(obj)       
-       end
-
-      end     
-    end
-    self.inventory.superbow.attack_timer = time() + self.inventory.superbow.attack_speed
-   end
-
-   if self.inventory.gun.active == true then
-    if(self.target != nil and self.target:is_active() == true and fast_distance(self, self.target) <= self.inventory.gun.range^2) then
-     if self.inventory.gun.attack_speed > 0.5 then self.inventory.gun.attack_speed *= 0.998 end
-     if self.inventory.gun.attack_timer <= time() then 
-      self.inventory.gun.attack_timer = time() + self.inventory.gun.attack_speed
-      
-      -- shake_camera(1)
-      local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.gun.damage,self.inventory.gun.backoff, true, 
-       self.inventory.gun.move_speed,self.inventory.gun.sprite, self.target, 'bullet', true) 
-      if new_bullet != nil then  
-       new_bullet:set_target(self.target)
-      end
-     end
-    end
-  else
-   self.inventory.gun.attack_speed=self.inventory.gun.first_attack_speed
-   end
-   if self.inventory.gun.timer <= time() then self.inventory.gun.active = false end
-
+   
+   self:speedboot_update()
+   self:superbow_update()
+   self:gun_update()	
+   
   end,
   update_invicible=function(self)
    if time() >= self.invicible.timer then self.invicible.state = false end
@@ -797,6 +801,7 @@ function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, 
  return make_game_object (x, y, tag, {
   damage=damage,
   follow=follow,
+  backoff=backoff,
   move_speed=move_speed,
   sprite=sprite,
   target=target,
@@ -804,21 +809,21 @@ function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, 
   hit_range=50,
   direction={x=target.x, y=target.y},
   update=function(self)
-   if self.target:is_active() == false then self:disable() end
+   if self.target:is_active() == false or self.target:is_alive() == false then self:disable() end
    -- self.move_speed *= 0.98
    if(follow) then self:move_follow() else self:move_straight() end
-   if(fast_distance(self, self.target) <= self.hit_range) then
-    -- backoff the target
-    self.target:take_damage(damage)
+   self:can_damage()
+  end,
+  can_damage=function(self)
+  	if(fast_distance(self, self.target) <= self.hit_range) then
+	    move_toward(self.target, self, -self.backoff)
+	    self.target:take_damage(damage)
 
-    -- smoke_part(self:center('x'),self:center('y'))   
-    -- dust_part(x, y, size, mage, speed, move_speed, colarr)
-    self:explode()
-    self:disable()
-   elseif self.target:is_active() == false then
-    self:disable()
-   end
-   
+	    -- smoke_part(self:center('x'),self:center('y'))   
+	    -- dust_part(x, y, size, mage, speed, move_speed, colarr)
+	    self:explode()
+	    self:disable()
+   	end
   end,
   explode=function(self)
     smoke_part_custom(self:center('x'),self:center(' y'), rnd(10)+5, rnd(100)+100, 0.5,{9, 4}) -- orange and brown circle.
@@ -837,18 +842,13 @@ function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, 
     move_toward(self, self.target, self.move_speed)
   end,
   draw=function(self)
-   -- if self.rotate_state then
-   --  self:rotate()
-   -- else
-    if time()*6%2 >= 1 then
-     pal(9, 2)
-    end
+   
     draw_outline_spr(self.sprite, self:center('x')+shkx, self:center('y')+shky)
     spr(self.sprite, self:center('x')+shkx, self:center('y')+shky)
     pal()
    -- end
 -- 
-   -- line(self.x,self.y,target.x,target.y, 8)
+   -- line(self.x,self.y,target.x,target.y, 4)
    -- spr(self.sprite, self:center('x'), self:center('y'))
    -- print(self.tag,self.x, self.y)
    -- pset(self.direction.x, self.direction.y,8)
@@ -928,8 +928,8 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   exp=0,
   sprite=1,
   target,
-  gun={active=false, duration=5, timer=0, backoff=150, move_speed=100,
-   sprite=55, attack_speed=6,  first_attack_speed= 6, attack_timer=0, range=25, damage=1},
+  gun={active=false, duration=5, timer=0, backoff=150, move_speed=25,
+   sprite=55, attack_speed=6,  first_attack_speed= 6, attack_timer=0, range=50, damage=1},
 
   find_target=function(self)
    -- self.move_point.target = closest_obj(self, {'player'})
@@ -986,7 +986,7 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
     local player = player
     local points = self.max_health + rnd(5)
     if player!=nil then player.score += points end
-    show_message('+'..flr(points), self.x, self.y, 8, 1, 15,  0.5, 'score', true)
+    show_message('+'..flr(points), self.x, self.y, 8, 1, 15,  1, 'score', true)
      -- show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_time, tag, moving, ui_state)
      -- local spawner = search_gameobject('spawner')
      -- smoke_part_custom(self:center('x'),self:center('y'), rnd(5)+7, rnd(25)+10, 0.25,{4, 2})    -- move_toward(self, target, move_speed)
@@ -1491,14 +1491,14 @@ __gfx__
 0009900004222240400440000004400400222200920029909444449002900940009922000042240000444000244440009fffffffffffff990094444444444900
 0009900040022004002000000000090002222220022209009444449000999000000220000000000000222000224400009ffffffff99999f90094444444449000
 0009900000400400000002000090000000222200220000009999999009900000000000000000000000222000022000009ffffff9999999990094444444449000
-00000000000220000002200000022000444224444442244400000000002222000000000000090000000229090000000099ffff99999999990094444444449000
-0000000000944900009449000094490004222240042222400000000002ffff200000000009999900000022900000000000000000000000000094444444449000
-000000000044440000444400004444000492294004922940009222002f9229f20049940022222220000222290000000000000000000000000094444444449000
-000000000099990000999904409999000022220220222200022292202f2992f20099990000222000002222290000000000000000000000000094444444449000
-000000000444444004444400004444400222220000222220029222902f2992f20099990000222000022222020000000000000000000000000094444444449900
-000000000009900000099000000990000002200000022000022292202f9229f20049940000222000922220000000000000000000000000000094499999944490
-0000000000099000090990000009902002022000000220200004400002ffff200000000000999000992200000000000000000000000000000944990000099490
-00000000004004000000090000200000000002000020000000044000002222000000000000999000099000000000000000000000000000000999000000000999
+00000000000220000002200000022000444224444442244400000000000000000000000000090000000229090000000099ffff99999999990094444444449000
+0000000000944900009449000094490004222240042222400000000000ffff000000000009999900000022900000000000000000000000000094444444449000
+000000000044440000444400004444000492294004922940009222000f9229f00049940022222220000222290000000000000000000000000094444444449000
+000000000099990000999904409999000022220220222200022292200f2992f00099990000222000002222290000000000000000000000000094444444449000
+000000000444444004444400004444400222220000222220029222900f2992f00099990000222000022222020000000000000000000000000094444444449900
+000000000009900000099000000990000002200000022000022292200f9229f00049940000222000922220000000000000000000000000000094499999944490
+0000000000099000090990000009902002022000000220200004400000ffff000000000000999000992200000000000000000000000000000944990000099490
+00000000004004000000090000200000000002000020000000044000000000000000000000999000099000000000000000000000000000000999000000000999
 000000004999999422222222f22224244242222f222222220000000049999444444999940000000094f2f2499999999999999999000000000000000000000000
 0000000049999994999242f22ff2442442442ff22f24299900000000929929444492992900000000942f2f499994444444444999000000000000000000000000
 9999999949999994992f242ff2f294f44f492f2ff242f2990000000099929944449992990000000094f2f249994ffffffffff499000000000000000000000000
