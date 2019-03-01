@@ -29,11 +29,11 @@ local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=
    'aaargh !','huh !', randtext=flr(rnd(3))}}
 
 local spawner = nil
-local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=2, alivee=0, enemy_limit = 80}}
+local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=0.2, alivee=0, enemy_limit = 40}}
 local item_spawnerinfos = {x=0, y=0, tag='spawner_item', properties={timer=0, time_between_spawn=3}}
 local item_spawner
 local playerinfos = {health=300, move_speed=1}
-local debugmode = false
+local debugmode = true
 local game_objects_count = {units=0, messages=0, particles=0}
 
 
@@ -61,15 +61,15 @@ function _draw()
  end
 
 if (debugmode) then
- spe_print('fps:'..stat(7),camx+ 0, 11+camy, 11, 3)
- spe_print('object:'..#game_objects,camx+ 0, 20+camy, 8, 2)
- spe_print('#enenmies:'..#enemies,camx+ 0, camy, 8, 2)
- spe_print('time:'..flr(time()/2),camx-64, camy-64, 8, 2)
- spe_print('e:'..spawner.alivee,camx-30, 30 +camy, 8, 2)
+ -- print('fps:'..stat(7),camx+ 0, 11+camy, 11, 3)
+ -- print('object:'..#game_objects,camx+ 0, 20+camy, 8, 2)
+ -- print('#enenmies:'..#enemies,camx+ 0, camy, 8, 2)
+ -- print('time:'..flr(time()/2),camx-64, camy-64, 8, 2)
+ print('e:'..spawner.alivee,camx-30, 30 +camy, 8, 2)
  
- spe_print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
- spe_print('all_cpu:'..stat(1),camx+ 0, 40+camy, 9, 4)
- spe_print('particles:'..#part,camx+ 0, 50+camy, 8, 2)
+ -- print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
+ print('all_cpu:'..stat(1),camx+ 0, 40+camy, 9, 4)
+ -- print('particles:'..#part,camx+ 0, 50+camy, 8, 2)
  -- spe_print('sys_cpu:'..stat(2),camx+ 0, 50+camy, 8, 2)
 
  -- spe_print(camx, camx, camy, 8, 2)
@@ -105,49 +105,47 @@ function _update60()
 end
 
 function init_pool_object()
- for i=0, 15 do
-      show_message('+'..flr(points), self.x, self.y, 8, 1, 5, 2, 'score', true)
-
- end
+	for i=0, 15 do
+		show_message('+'..flr(points), self.x, self.y, 8, 1, 5, 2, 'score', true)
+	end
 end
 
 function start_game()
- sfx(-1, 0)
+	sfx(-1, 0)
 
- mode = 'game'
- draw_map()
- player = search_gameobject('player')
- main_camera = search_gameobject('camera')
+	mode = 'game'
+	draw_map()
+	player = search_gameobject('player')
+	main_camera = search_gameobject('camera')
 
- sfx(8)
- start_time = 6+time()
- music(0, 0, 8)
+	sfx(8)
+	start_time = 6+time()
+	music(0, 0, 8)
 
 end
 
 function draw_start()
- cls(15)
- draw_part()
+	cls(15)
+	draw_part()
 
- -- sspr(0, 64, 96, 55, 6, 0, 96*1.2, 55*1.2)
- sspr(0, 64, 96, 55, 15, 2*cos(time()/4))
+	-- sspr(0, 64, 96, 55, 6, 0, 96*1.2, 55*1.2)
+	sspr(0, 64, 96, 55, 15, 2*cos(time()/4))
 
- if time() < 0.1 then  draw_map() end
- -- spe_print("tiny coliseum", 35, 32, 9, 4)
- if time()*1%2 > 0.5 then spe_print('press ❎ to start ', 30, 60, 9, 4) end
- spe_print("by wombart", 2, 120, 9, 4, true)
- -- draw_all_gameobjects()
- tuto()
+	if time() < 0.1 then  draw_map() end
+	-- spe_print("tiny coliseum", 35, 32, 9, 4)
+	if time()*1%2 > 0.5 then spe_print('press ❎ to start ', 30, 60, 9, 4) end
+	spe_print("by wombart", 2, 120, 9, 4, true)
+	-- draw_all_gameobjects()
+	tuto()
 end
 
 
 
 function whiteframe_update()
- if whiteframe == true then
-  rectfill(-100,-100, 200, 200, 15)
-  whiteframe = false
-
- end
+	if whiteframe == true then
+		rectfill(-100,-100, 200, 200, 15)
+		whiteframe = false
+	end
 end
 
 function draw_game()
@@ -194,7 +192,7 @@ function draw_gameover()
  sspr(101, 83, 125-101, 122-82,camx-12 ,camy-50)
  sspr(sx,sy,sw,sh,dx,dy,dw,dh,flip_x,flip_y)
  for obj in all(game_objects) do
-  if(obj:is_active() == true and sub(obj:get_tag(),1,8)=='gameover') then
+  if (sub(obj:get_tag(),1,8)=='gameover') then
    obj:draw()
   end
  end
@@ -230,17 +228,17 @@ end
 
 function draw_all_gameobjects()
  for obj in all(game_objects) do
-  if(obj:is_active() == true) then
+  -- if(obj:is_active() == true) then
    obj:draw()
    -- print(obj:get_tag(), obj.x, obj.y-4, 0)
-  end
+  -- end
  end
 end
 function update_all_gameobjects()
  for obj in all(game_objects) do
-  if(obj:is_active() == true) then
+  -- if(obj:is_active() == true) then
    obj:update()
-  end
+  -- end
  end
 end
 
@@ -472,7 +470,7 @@ function make_player()
   take_item=function(self)
     for obj in all(game_objects) do
         local tag = obj:get_tag()
-        if sub(tag, 1, 4) == 'item' and obj:is_active() and fast_distance(self, obj) < self.inventory.pickup_range then
+        if sub(tag, 1, 4) == 'item' and fast_distance(self, obj) < self.inventory.pickup_range then
             
             if sub(tag, 6,12) == 'heart' then  sfx(8)
                 if self.health <= 7 then 
@@ -531,8 +529,7 @@ function make_player()
   superbow_update=function(self)
     if self.inventory.superbow.timer > time() and self.inventory.superbow.attack_timer <= time()  then
         for obj in all(game_objects) do
-            if obj:get_tag()== 'enemy' and obj:is_active() 
-            and fast_distance(self, obj) <= self.inventory.superbow.range^2 then
+            if obj:get_tag()== 'enemy' and fast_distance(self, obj) <= self.inventory.superbow.range^2 then
                 -- shake_camera(1)
                 local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.superbow.damage,
                 self.inventory.superbow.backoff, true, self.inventory.superbow.bullet_speed,
@@ -997,7 +994,7 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
     local player = player
     local points = self.max_health + rnd(5)
     if player!=nil then player.score += points end
-    show_message('+'..flr(points), self.x, self.y, 8, 1, 15,  1, 'score', true)
+    show_message('+'..flr(points), self.x, self.y, 8, 1, 15,  2, 'score', true)
      -- show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_time, tag, moving, ui_state)
      -- local spawner = search_gameobject('spawner')
      -- smoke_part_custom(self:center('x'),self:center('y'), rnd(5)+7, rnd(25)+10, 0.25,{4, 2})    -- move_toward(self, target, move_speed)
@@ -1012,7 +1009,7 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
       shake_camera(5)
       local explode_range = 90
       for obj in all(enemies) do
-       if obj:is_active() and obj:is_alive() and fast_distance(self, obj) < explode_range then
+       if fast_distance(self, obj) < explode_range then
 
         smoke_part_custom(self:center('x'),self:center(' y'), 30, rnd(50)+25, 0.5,{9, 4}) -- orange and brown circle.
         obj:take_damage(obj.max_health)
@@ -1070,10 +1067,10 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   end,
   draw=function(self)
   
-  local shadow_spr = 20
-  spr(shadow_spr, self.x+shky, self.y+shkx+1)
+  -- local shadow_spr = 20
+  -- spr(shadow_spr, self.x+shky, self.y+shkx+1)
   
-  -- draw_outline_spr(self.current_spr, self.x, self.y)
+  draw_outline_spr(self.current_spr, self.x, self.y)
   spr(self.current_spr, self.x+shky, self.y+shkx)
 
   -- spe_print('hp '..self.health, self.x, self.y+10, 9, 4)
@@ -1091,15 +1088,14 @@ function closest_obj(target, tag)
   local closest=nil
 
   for obj in all(game_objects) do
-    if obj:is_active() == true then
-      if(obj:get_tag() == tag) then
-        dist = fast_distance(target, obj)
-        if(dist < shortest_dist) then
-          closest = obj
-          shortest_dist = dist
-        end
-      end
-    end
+	  if(obj:get_tag() == tag) then
+	    dist = fast_distance(target, obj)
+	    if(dist < shortest_dist) then
+	      closest = obj
+	      shortest_dist = dist
+	    end
+	  end
+
   end
   return closest
 end
