@@ -29,11 +29,11 @@ local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=
    'aaargh !','huh !', randtext=flr(rnd(3))}}
 
 local spawner = nil
-local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=0.2, alivee=0, enemy_limit = 40}}
+local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=2, alivee=0, enemy_limit = 40}}
 local item_spawnerinfos = {x=0, y=0, tag='spawner_item', properties={timer=0, time_between_spawn=3}}
 local item_spawner
-local playerinfos = {health=300, move_speed=1}
-local debugmode = true
+local playerinfos = {health=3, move_speed=1}
+local debugmode = false
 local game_objects_count = {units=0, messages=0, particles=0}
 
 
