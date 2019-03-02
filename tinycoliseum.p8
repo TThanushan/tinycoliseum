@@ -16,6 +16,7 @@ local _player
 local shkx=0
 local shky=0
 local test=0
+local wave_number
 local enemies
 
 local main_camera
@@ -23,16 +24,16 @@ local camx=64
 local camy=64
 
 local whiteframe = false
-local start_time = 6
+local start_time = 3
 
 local enemy_text = {timer=0, duration=5, randdisplay=rnd(4)+2, randdisplaytimer=rnd(8)+4, text_arr={'come here !',
    'aaargh !','huh !', randtext=flr(rnd(3))}}
 
 local spawner = nil
 local spawner_infos = {x=0, y=0, tag='spawner', properties={timer=0, time_between_spawn=2, alivee=0, enemy_limit = 40}}
-local item_spawnerinfos = {x=0, y=0, tag='spawner_item', properties={timer=0, time_between_spawn=3}}
+local item_spawnerinfos = {x=0, y=0, tag='spawner_item', properties={timer=0, time_between_spawn=6}}
 local item_spawner
-local playerinfos = {health=3, move_speed=1}
+local playerinfos = {health=6, move_speed=1}
 local debugmode = false
 local game_objects_count = {units=0, messages=0, particles=0}
 
@@ -62,12 +63,12 @@ function _draw()
 
 if (debugmode) then
  -- print('fps:'..stat(7),camx+ 0, 11+camy, 11, 3)
- -- print('object:'..#game_objects,camx+ 0, 20+camy, 8, 2)
+ print('object:'..#game_objects,camx+ 0, 20+camy, 8, 2)
  -- print('#enenmies:'..#enemies,camx+ 0, camy, 8, 2)
  -- print('time:'..flr(time()/2),camx-64, camy-64, 8, 2)
  print('e:'..spawner.alivee,camx-30, 30 +camy, 8, 2)
  
- -- print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
+ print('mem_use:'..stat(0),camx+ 0, 30+camy, 8, 2)
  print('all_cpu:'..stat(1),camx+ 0, 40+camy, 9, 4)
  -- print('particles:'..#part,camx+ 0, 50+camy, 8, 2)
  -- spe_print('sys_cpu:'..stat(2),camx+ 0, 50+camy, 8, 2)
@@ -105,47 +106,47 @@ function _update60()
 end
 
 function init_pool_object()
-	for i=0, 15 do
-		show_message('+'..flr(points), self.x, self.y, 8, 1, 5, 2, 'score', true)
-	end
+    for i=0, 15 do
+        show_message('+'..flr(points), self.x, self.y, 8, 1, 5, 2, 'score', true)
+    end
 end
 
 function start_game()
-	sfx(-1, 0)
+    sfx(-1, 0)
 
-	mode = 'game'
-	draw_map()
-	player = search_gameobject('player')
-	main_camera = search_gameobject('camera')
+    mode = 'game'
+    draw_map()
+    player = search_gameobject('player')
+    main_camera = search_gameobject('camera')
 
-	sfx(8)
-	start_time = 6+time()
-	music(0, 0, 8)
+    sfx(8)
+    start_time += time()
+    music(0, 0, 8)
 
 end
 
 function draw_start()
-	cls(15)
-	draw_part()
+    cls(15)
+    draw_part()
 
-	-- sspr(0, 64, 96, 55, 6, 0, 96*1.2, 55*1.2)
-	sspr(0, 64, 96, 55, 15, 2*cos(time()/4))
+    -- sspr(0, 64, 96, 55, 6, 0, 96*1.2, 55*1.2)
+    sspr(0, 64, 96, 55, 15, 2*cos(time()/4))
 
-	if time() < 0.1 then  draw_map() end
-	-- spe_print("tiny coliseum", 35, 32, 9, 4)
-	if time()*1%2 > 0.5 then spe_print('press ❎ to start ', 30, 60, 9, 4) end
-	spe_print("by wombart", 2, 120, 9, 4, true)
-	-- draw_all_gameobjects()
-	tuto()
+    if time() < 0.1 then  draw_map() end
+    -- spe_print("tiny coliseum", 35, 32, 9, 4)
+    if time()*1%2 > 0.5 then spe_print('press ❎ to start ', 30, 60, 9, 4) end
+    spe_print("by wombart", 2, 120, 9, 4, true)
+    -- draw_all_gameobjects()
+    tuto()
 end
 
 
 
 function whiteframe_update()
-	if whiteframe == true then
-		rectfill(-100,-100, 200, 200, 15)
-		whiteframe = false
-	end
+    if whiteframe == true then
+        rectfill(-100,-100, 200, 200, 15)
+        whiteframe = false
+    end
 end
 
 function draw_game()
@@ -162,7 +163,9 @@ end
 
 function print_wave_number()
    local x, y = camx-12, camy-60
-   spe_print('wave '..flr(time()/20)+1, x, y, 9,4)
+   if not (game_over) then wave_number = flr(time()/20)+1 end
+   
+   spe_print('wave '..wave_number, x, y, 9,4)
 end
 
 function camera_update()
@@ -180,7 +183,8 @@ function draw_gameover()
   do_once=true
 
  show_message('you died !!!', camx-20, camy-30-4*(cos(time())), 8, 2, 15, 2, 'gameover1', true)
- show_message('your score is '..flr(player.score), camx -32, camy+15, 10, 9, 10, 2, 'gameover2', true)
+ show_message('your score is '..flr(player.score)..' / wave '..wave_number, camx -48, camy+15, 10, 9, 10, 2, 'gameover2', true)
+ 
  show_message('press ❎ button to restart', camx - 51, camy + 40, 11, 3, 2, 2, 'gameover3', true)
  
  end
@@ -364,6 +368,7 @@ function make_item(x, y, mage,tag, sprite)
     pal(2, 15)
     pal(4, 15)
     pal(9, 15)
+    pal(11, 15)
    end
    
    spr(sprite, self.x, self.y)
@@ -482,7 +487,8 @@ function make_player()
 
                 end
             elseif sub(tag, 6,14) =='gun' then sfx(8)
-                self.inventory.gun.active = true self.inventory.gun.timer = time() + self.inventory.gun.duration
+                self.inventory.gun.active = true 
+                self.inventory.gun.timer = time() + self.inventory.gun.duration
                 show_message('bow', self.x, self.y, 12, 2, 10, 5, 'msg_item', true) 
                 obj:disable()
             elseif sub(tag, 6,22) =='speedboot' then sfx(8)
@@ -533,7 +539,7 @@ function make_player()
                 -- shake_camera(1)
                 local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.superbow.damage,
                 self.inventory.superbow.backoff, true, self.inventory.superbow.bullet_speed,
-                self.inventory.superbow.bullet_sprite, obj, 'superbullet', true) 
+                self.inventory.superbow.bullet_sprite, obj, 'superbullet', 10+time()) 
 
                 if new_bullet != nil then  
                     new_bullet:set_target(obj)       
@@ -547,14 +553,16 @@ function make_player()
   end,
   gun_update=function(self)
     if self.inventory.gun.active == true then
-        if(self.target != nil and self.target:is_active() == true and fast_distance(self, self.target) <= self.inventory.gun.range^2) then
+        if(self.target != nil and fast_distance(self, self.target) <= self.inventory.gun.range^2) then
+
             if self.inventory.gun.attack_speed > self.inventory.gun.attack_speed/2 then self.inventory.gun.attack_speed *= self.inventory.gun.attack_speed_growth end 
+
             if self.inventory.gun.attack_timer <= time() then 
                 self.inventory.gun.attack_timer = time() + self.inventory.gun.attack_speed
 
                 -- shake_camera(1)
                 local new_bullet = make_bullet(self:center('x'), self:center('y'), self.inventory.gun.damage,self.inventory.gun.backoff, true, 
-                self.inventory.gun.move_speed,self.inventory.gun.sprite, self.target, 'bullet', true) 
+                self.inventory.gun.move_speed,self.inventory.gun.sprite, self.target, 'bullet', 10+time()) 
                 if new_bullet != nil then  
                     new_bullet:set_target(self.target)
                 end
@@ -566,6 +574,19 @@ function make_player()
 
     if self.inventory.gun.timer <= time() then self.inventory.gun.active = false end
 
+  end,
+  item_duration_bar=function(self, x, y, current_duration, max_duration)
+    if (current_duration <= 0) return
+    local lenght = 7
+    local pourcentage = current_duration/max_duration
+    -- local pourcentage = (self.inventory.gun.timer-time())/self.inventory.gun.duration
+    rect(x, y, x+lenght, y, 4)
+    rect(x, y, x+lenght*pourcentage, y, 9)
+    -- print(cur, self.x, self.y+4, 0)
+  end,
+  all_item_duration_bar = function(self)
+      self:item_duration_bar(self.x, self.y-2, self.inventory.gun.timer-time(), self.inventory.gun.duration)
+      self:item_duration_bar(self.x, self.y-3, self.inventory.superbow.timer-time(), self.inventory.superbow.duration)
   end,
   item_manager=function(self)
 
@@ -581,7 +602,8 @@ function make_player()
   take_damage=function(self, damage)
    
    if self.invicible.state == true then return false end
-   sfx(3)
+   -- damaged sound
+   sfx(3) sfx(18)
    whiteframe=true
    self.health-= damage
    self.invicible.state = true
@@ -686,19 +708,19 @@ function make_player()
     self:draw_weapon_range(self.inventory.superbow.timer, self.inventory.superbow.range)
   end,
   update=function(self)
-   -- if self.stopped then return end
-   self:find_target()
-   self:is_alive()
-   self:update_invicible()
-   self:item_manager()
-   self:take_item()
-   self:move_input()
-   self:roll()
-   self:is_moving()
+    -- if self.stopped then return end
+    self:find_target()
+    self:is_alive()
+    self:update_invicible()
+    self:item_manager()
+    self:take_item()
+    self:move_input()
+    self:roll()
+    self:is_moving()
   end,
   create_walking_smoke=function(self)
     local size, duration = 3, 10
-    
+
     if self.move_speed != playerinfos.move_speed then
         size, duration = 6, 30
     end
@@ -708,16 +730,15 @@ function make_player()
     end
   end,
   draw=function(self)
-   -- if self.stopped then return end
-   self:create_walking_smoke()
-   self:display_score()
-   self:draw_all_weapon_range()
+    -- if self.stopped then return end
+    self:create_walking_smoke()
+    self:display_score()
+    self:draw_all_weapon_range()
+    self:draw_player()
+    spe_print('hp '..self.health, self.x+shkx, self.y+10+shky, 9,2)
 
-   self:draw_player()
-
-   spe_print('hp '..self.health, self.x+shkx, self.y+10+shky, 9,2)
-
-   self:draw_cursor()
+    self:draw_cursor()
+    self:all_item_duration_bar()
   end
   })
 
@@ -740,12 +761,11 @@ function make_turret(x, y, tag, duration, range, attack_speed, sprite, sound, bu
     sfx(sound)
     local target = closest_obj(self, 'enemy')
     if target ==nil then return end
-       if target:get_tag()== 'enemy' and target:is_active() 
-       and fast_distance(self, target) <= self.range^2 then
+       if target:get_tag()== 'enemy' and fast_distance(self, target) <= self.range^2 then
         -- shake_camera(2)
         local new_bullet = make_bullet(self:center('x'), self:center('y'), self.bullet_infos.damage,
          self.bullet_infos.backoff, true, self.bullet_infos.bullet_speed,
-         41, target, 'turretbullet', true) 
+         41, target, 'turretbullet', 10+time()) 
         if new_bullet != nil then  
          new_bullet:set_target(target)       
         end
@@ -772,10 +792,10 @@ function make_turret(x, y, tag, duration, range, attack_speed, sprite, sound, bu
    draw=function(self)
     draw_outline_spr(time()*4%2+self.sprite, self.x+shkx, self.y+shky)
     spr(time()*4%2+self.sprite, self.x+shkx, self.y+shky)
-    spe_print(flr(self.timer-time()), self.x+shkx+3, self.y+shky+8, 9, 4)
-    spe_print('turret', self.x+shkx-6 , self.y+shky-8, 9, 4)
+    spe_print(flr(self.timer-time()), self.x+shkx+12, self.y+shky+1, 9, 4)
+    -- spe_print('turret', self.x+shkx-6 , self.y+shky-8, 9, 4)
 
-    circ(self:center('x'), self:center('y'),self.range, 2)
+    -- circ(self:center('x'), self:center('y'),self.range, 2)
    end
 
   })
@@ -805,19 +825,19 @@ end
 
 
 -- ##bullet
-function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, tag, rotate)
+function make_bullet(x, y, damage, backoff, follow, move_speed, sprite, target, tag, duration)
  return make_game_object (x, y, tag, {
-  damage=damage,
-  follow=follow,
-  backoff=backoff,
-  move_speed=move_speed,
-  sprite=sprite,
-  target=target,
-  rotate_state=rotate,
-  hit_range=50,
-  direction={x=target.x, y=target.y},
+  damage = damage,
+  follow = follow,
+  duration = duration,
+  backoff = backoff,
+  move_speed = move_speed,
+  sprite = sprite,
+  target = target,
+  hit_range = 50,
+  direction = {x = target.x, y = target.y},
   update=function(self)
-   if self.target:is_active() == false or self.target:is_alive() == false then self:disable() end
+   if self.duration <= time() or self.target:is_alive() == false then self:disable() end
    -- self.move_speed *= 0.98
    if(follow) then self:move_follow() else self:move_straight() end
    self:can_damage()
@@ -936,7 +956,7 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   exp=0,
   sprite=1,
   target,
-  gun={active=false, duration=5, timer=0, backoff=150, move_speed=25,
+  gun={active=false, duration=1, timer=0, backoff=150, move_speed=25,
    sprite=55, attack_speed=6,  first_attack_speed= 6, attack_timer=0, range=50, damage=1},
 
   find_target=function(self)
@@ -946,12 +966,13 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   end,
   mage_attack=function(self)
 
-  if(self:get_target() != nil and self:get_target():is_active() == true and fast_distance(self, self:get_target()) <= self.gun.range^2) then
+  if(self:get_target() != nil and fast_distance(self, self:get_target()) <= self.gun.range^2) then
    if self.gun.attack_timer <= time() then 
     self.gun.attack_timer = time() + self.gun.attack_speed
     -- shake_camera(2)
+
     local new_bullet = make_bullet(self:center('x'), self:center('y'), self.gun.damage,self.gun.backoff, false, 
-     self.gun.move_speed,self.gun.sprite, self:get_target(), 'bullete', false) 
+     self.gun.move_speed,self.gun.sprite, self:get_target(), 'bullete', 6+time()) 
     if new_bullet != nil then  
      new_bullet:set_target(self:get_target())
     end
@@ -993,13 +1014,14 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
     blood_part(self:center('x'), self:center('y'), 1, {2})
     local player = player
     local points = self.max_health + rnd(5)
-    if player!=nil then player.score += points end
+    
+    player.score += points
     show_message('+'..flr(points), self.x, self.y, 8, 1, 15,  2, 'score', true)
      -- show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_time, tag, moving, ui_state)
      -- local spawner = search_gameobject('spawner')
      -- smoke_part_custom(self:center('x'),self:center('y'), rnd(5)+7, rnd(25)+10, 0.25,{4, 2})    -- move_toward(self, target, move_speed)
      -- smoke_part_custom(self:center('x'),self:center('y'), rnd(8)+10, rnd(25)+10, 2,{8})    -- move_toward(self, target, move_speed)
-     sfx(9)
+     sfx(19)
      shake_camera(0.5)
      -- ennemy does damage around him on other enemies
      local rand = flr(rnd(11))
@@ -1046,10 +1068,6 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
     self.anim_timer = time()+0.25
    end
   end,
-  reset=function(self)
-   self.health = self.max_health
-   self:enable()
-  end,
   update=function(self)
 
    if self:is_alive() == false then self:kill() return end
@@ -1072,7 +1090,6 @@ function make_enemy(x, y, health, move_speed, idle_spr, walk_spr, class)
   
   draw_outline_spr(self.current_spr, self.x, self.y)
   spr(self.current_spr, self.x+shky, self.y+shkx)
-
   -- spe_print('hp '..self.health, self.x, self.y+10, 9, 4)
   -- spe_print(flr(time())..'/'..self.attack_info.timer, self.x, self.y+10, 9, 4)
   end
@@ -1088,13 +1105,13 @@ function closest_obj(target, tag)
   local closest=nil
 
   for obj in all(game_objects) do
-	  if(obj:get_tag() == tag) then
-	    dist = fast_distance(target, obj)
-	    if(dist < shortest_dist) then
-	      closest = obj
-	      shortest_dist = dist
-	    end
-	  end
+      if(obj:get_tag() == tag) then
+        dist = fast_distance(target, obj)
+        if(dist < shortest_dist) then
+          closest = obj
+          shortest_dist = dist
+        end
+      end
 
   end
   return closest
@@ -1114,27 +1131,16 @@ function make_game_object(x, y, tag, properties)
   x=x,
   y=y,
   tag=tag,
-  active=true,
+  -- active=true,
 
   update=function()
   end,
   draw=function()
   end,
 
-  is_active=function(self)
-   return self.active
-  end,
   disable=function(self)
-   self.active = false
    del(game_objects, self)
    del(enemies, self)
-   -- self.x, self.y = 150, 150
-  end,
-  enable=function(self)
-   self.active = true
-  end,
-  reset=function(self)
-   self:enable()
   end,
   center=function(self, value)
    if value == 'x' then return self.x+4
@@ -1143,11 +1149,6 @@ function make_game_object(x, y, tag, properties)
   end,
   get_tag=function(self)
    return self.tag
-  end,
-  set_value=function(self, x, y, tag)
-   self.x=x
-   self.y=y
-   self.tag=tag
   end
  }
 
@@ -1406,12 +1407,7 @@ end
 -- ##show_message
 function show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_time, tag, moving, ui_state)
  local col1, col2 = 9, 4
- -- local obj = search_gameobject(tag) 
- -- if(obj != nil and obj:is_active() == false) then 
- --  obj:set_properties(_text, _x, _y, _in_color, _out_color, _speed, _display_time)
- --  obj:enable()
- --  return obj  
- -- end
+
  local msg = make_game_object(_x, _y, tag, {
   text=_text, 
   in_color = _in_color,
@@ -1419,11 +1415,6 @@ function show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_tim
   speed = _speed,
   moving_speed=3,
   display_time = time()+_display_time,
-  reset=function(self)
-   self:enable()
-   self.timer = 0
-   self.moving_speed=4
-  end,
   set_properties=function(self, text, x, y, in_color, out_color, speed, display_time)
    self.text=text
    self.x=x
@@ -1432,7 +1423,6 @@ function show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_tim
    self.out_color=out_color
    self.speed=speed
    self.display_time=time()+display_time
-   self:reset()
   end,
   update=function(self)
 
@@ -1441,7 +1431,6 @@ function show_message(_text, _x, _y, _in_color, _out_color, _speed, _display_tim
     end
    end
    if(time()>= self.display_time) then 
-    self:reset()
     self:disable()
    end
   end,
@@ -1642,15 +1631,15 @@ __sfx__
 000100000211005110071100b1100d1100e1101011012110150101601018010190101a0101d0101f01022010230102601027010290102b0102e01030010310103301036010380103a0103c0103f0103f01000000
 000200000f6200b620086100561003610016101d6000260024600216001a60017600156000f6000c6000860004600026000c6000a6000a600126000a60007600076000f600076000760007600076000a60037600
 000400000102402024060140f0141801412004010040100401004040041e0041b0041600413004110040e0040b004080040400401004000040000400004000040000400004000040000400004000040000400004
-000200000d04009040080400604004040020400100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-011400200f5131d711115121d0101151122713165201d022187211b5120f7230f5131b0220f5101b7222252116012137111d520110111b5201b7111b5230f7120f0211b5100f7211b5221b02316710135231d711
+010200000d04009040080400604004040020400100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+001400200f5131d711115121d0101151122713165201d022187211b5120f7230f5131b0220f5101b7222252116012137111d520110111b5201b7111b5230f7120f0211b5100f7211b5221b02316710135231d711
 000300003f61034610306101861013610136100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000300003a51030510275101b5100c510055100351013500115000f5000a5000a50007500055000f0000f0000f0000f0000b6000b6000b600120000f00014000110000f0001000013000180001e0000f00037000
 0102000021653216532165321653216532165336153321532f1532d1532a15327153241532315322153211531e1531e1531c1531b1531a1531a15318153171531615314153101530f1530d1530c1530e1530c153
 01030000030230502306023070230a1230a1230c1230c1230f12311123111231312313123161231612316123165231852318523185231b5231b5231d5231f5232252324523275232e52330523355233a5233f523
 002500010161001600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000003f010390102f010240201d0201b0201801015010140101301011010100101101011010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000100000a03010030180301c03025030290300a0000b0000f00013000150001500015000160001a0001f00020000200002000024000270000000000000000000000000000000000000000000000000000000000
 010c0020000000c0230c023000000c023000000c0230c023000000c023000000c02300000000000c0230c023000000c0230c023000000c0230c0230c0230c023000000c0230c023000000c0230c023000000c023
 010c00200c0230c0230c003000000c0030c0230c0230c0030c0230c0030c0230c0030c0030c0230c0230c0030c0230c0230c0030c0030c0230c0230c0230c0030c0230c0230c0030c0030c0030c0031800300003
 010c0020000000c0030332518605033250c0030c003033250c003033250c0033f2253f2250c0030c003033250c0030c00303325186050c0030c0030c003033250c0030c00303325186050c605033250332503325
